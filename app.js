@@ -1,525 +1,722 @@
-// ===== Helpers =====
-const $ = (q, el = document) => el.querySelector(q);
-const $$ = (q, el = document) => [...el.querySelectorAll(q)];
-const VND = (n) => n.toLocaleString("vi-VN") + "đ";
-function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+(() => {
+  "use strict";
 
-// ===== Static shop info =====
-const SHOP = {
-  name: "Ly Shop",
-  phone: "0939617080",
-  zaloLink: "https://zalo.me/0939617080",
-  zaloGroup: "https://zalo.me/g/bugggx505",
-  tiktokUrl: "https://www.tiktok.com/@tho.ly.nguyn32",
-  tiktokId: "@tho.ly.nguyn32",
-  tiktokName: "Ly Hệ rú Bỳ🌸"
-};
+  // =========================
+  // CONFIG
+  // =========================
+  const ZALO_PHONE = "0939617080";
+  const TIKTOK_URL = "https://www.tiktok.com/@tho.ly.nguyn32";
+  const ZALO_CHAT_URL = `https://zalo.me/${ZALO_PHONE}`;
 
-// ===== Year =====
-$("#year") && ($("#year").textContent = new Date().getFullYear());
+  // =========================
+  // HELPERS
+  // =========================
+  const $ = (s, root = document) => root.querySelector(s);
+  const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
+  const fmtVND = (n) => new Intl.NumberFormat("vi-VN").format(n) + "đ";
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
-/* =========================
-   THEME: auto + light + dark
-========================= */
-const THEME_KEY = "lyshop_theme_mode"; // auto | light | dark
-let mql = window.matchMedia ? window.matchMedia("(prefers-color-scheme: light)") : null;
+  // SVG data-uri => luôn có ảnh, khỏi lo path
+  function svgDataUri({ title, code, colors }) {
+    const [c1, c2] = colors;
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="1706" height="2560" viewBox="0 0 1706 2560">
+        <defs>
+          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="${c1}"/>
+            <stop offset="1" stop-color="${c2}"/>
+          </linearGradient>
+          <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="18"/>
+          </filter>
+        </defs>
+        <rect width="1706" height="2560" fill="url(#g)"/>
+        <circle cx="260" cy="420" r="220" fill="rgba(255,255,255,.18)" filter="url(#blur)"/>
+        <circle cx="1460" cy="720" r="260" fill="rgba(255,255,255,.14)" filter="url(#blur)"/>
+        <circle cx="920" cy="2000" r="360" fill="rgba(0,0,0,.18)" filter="url(#blur)"/>
+        <text x="90" y="240" fill="rgba(255,255,255,.92)" font-size="90" font-family="Inter, Arial" font-weight="900">Ly Shop</text>
+        <text x="90" y="340" fill="rgba(255,255,255,.85)" font-size="56" font-family="Inter, Arial" font-weight="800">${escapeXml(title)}</text>
+        <text x="90" y="430" fill="rgba(255,255,255,.78)" font-size="44" font-family="Inter, Arial" font-weight="800">Mã: ${escapeXml(code)}</text>
+        <text x="90" y="2420" fill="rgba(255,255,255,.88)" font-size="46" font-family="Inter, Arial" font-weight="900">Chốt đơn qua Zalo: ${ZALO_PHONE}</text>
+      </svg>
+    `.trim();
 
-function themeLabel(mode, resolvedTheme){
-  if(mode === "auto") return { text: "Auto", icon: "🪄" };
-  if(resolvedTheme === "light") return { text: "Sáng", icon: "☀️" };
-  return { text: "Tối", icon: "🌙" };
-}
-function setThemeResolved(theme){
-  document.documentElement.setAttribute("data-theme", theme);
-}
-function setThemeMode(mode){
-  localStorage.setItem(THEME_KEY, mode);
-  applyThemeMode(mode, true);
-}
-function applyThemeMode(mode, animate=false){
-  const resolved = (mode === "auto")
-    ? (mql && mql.matches ? "light" : "dark")
-    : mode;
+    // encode for data-uri
+    const encoded = encodeURIComponent(svg)
+      .replace(/'/g, "%27")
+      .replace(/"/g, "%22");
 
-  if(animate){
-    document.documentElement.classList.add("theme-anim");
-    setTimeout(()=> document.documentElement.classList.remove("theme-anim"), 260);
+    return `data:image/svg+xml;charset=utf-8,${encoded}`;
   }
 
-  setThemeResolved(resolved);
-
-  const { text, icon } = themeLabel(mode, resolved);
-  $("#themeIcon") && ($("#themeIcon").textContent = icon);
-  $("#themeText") && ($("#themeText").textContent = text);
-  $("#themeTextMobile") && ($("#themeTextMobile").textContent = text);
-
-  // highlight mobile chips
-  $$(".mobile-theme [data-theme-mode]").forEach(b => b.classList.remove("is-active"));
-  $$(".mobile-theme [data-theme-mode]").forEach(b => {
-    if(b.dataset.themeMode === mode) b.classList.add("is-active");
-  });
-}
-function initTheme(){
-  const saved = localStorage.getItem(THEME_KEY);
-  const mode = (saved === "auto" || saved === "light" || saved === "dark") ? saved : "auto";
-  applyThemeMode(mode, false);
-
-  // if auto -> respond to system changes
-  if(mql){
-    mql.addEventListener?.("change", () => {
-      const currentMode = localStorage.getItem(THEME_KEY) || "auto";
-      if(currentMode === "auto") applyThemeMode("auto", true);
-    });
-  }
-}
-initTheme();
-
-// Desktop theme menu
-const themeBtn = $("#themeBtn");
-const themeMenu = $("#themeMenu");
-function toggleThemeMenu(force){
-  if(!themeMenu) return;
-  const open = force ?? themeMenu.hidden;
-  themeMenu.hidden = !open;
-}
-themeBtn?.addEventListener("click", (e) => {
-  e.stopPropagation();
-  toggleThemeMenu();
-});
-document.addEventListener("click", () => toggleThemeMenu(false));
-themeMenu?.addEventListener("click", (e) => e.stopPropagation());
-
-$$(".theme__opt").forEach(btn => {
-  btn.addEventListener("click", () => {
-    setThemeMode(btn.dataset.themeMode);
-    toggleThemeMenu(false);
-  });
-});
-
-// Mobile theme buttons
-$$(".mobile-theme [data-theme-mode]").forEach(btn => {
-  btn.addEventListener("click", () => setThemeMode(btn.dataset.themeMode));
-});
-
-/* =========================
-   MOBILE MENU
-========================= */
-const hamburger = $("#hamburger");
-const mobileMenu = $("#mobileMenu");
-hamburger?.addEventListener("click", () => {
-  const expanded = hamburger.getAttribute("aria-expanded") === "true";
-  hamburger.setAttribute("aria-expanded", String(!expanded));
-  mobileMenu.hidden = expanded;
-});
-$$(".mobile-menu a").forEach(a => {
-  a.addEventListener("click", () => {
-    hamburger?.setAttribute("aria-expanded", "false");
-    if(mobileMenu) mobileMenu.hidden = true;
-  });
-});
-
-/* =========================
-   BUTTON GLOW
-========================= */
-$$(".btn--primary").forEach(btn => {
-  btn.addEventListener("pointermove", (e) => {
-    const r = btn.getBoundingClientRect();
-    const mx = ((e.clientX - r.left) / r.width) * 100;
-    const my = ((e.clientY - r.top) / r.height) * 100;
-    btn.style.setProperty("--mx", mx + "%");
-    btn.style.setProperty("--my", my + "%");
-  });
-});
-
-/* =========================
-   REVEAL (IntersectionObserver)
-========================= */
-let io = null;
-function initReveal(){
-  const revealEls = $$(".reveal");
-  revealEls.forEach(el => {
-    const d = el.dataset.delay ? `${el.dataset.delay}ms` : "0ms";
-    el.style.setProperty("--d", d);
-  });
-
-  if(!("IntersectionObserver" in window)){
-    revealEls.forEach(el => el.classList.add("in"));
-    return;
+  function escapeXml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&apos;");
   }
 
-  io = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if(entry.isIntersecting){
-        entry.target.classList.add("in");
-        io.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.15 });
+  function buildZaloMessage(items) {
+    // items: [{code, name, color, size, qty}]
+    const lines = [
+      "Ly ơi chốt đơn giúp em nhé ❤️",
+      "",
+      ...items.map((it, i) => {
+        const c = it.color ? ` | Màu: ${it.color}` : "";
+        const s = it.size ? ` | Size: ${it.size}` : "";
+        return `${i + 1}) ${it.code} - ${it.name}${c}${s} | SL: ${it.qty}`;
+      }),
+      "",
+      "Địa chỉ nhận hàng: ...",
+      "SĐT người nhận: ...",
+    ];
+    return lines.join("\n");
+  }
 
-  revealEls.forEach(el => io.observe(el));
-}
-initReveal();
+  function openZaloWithText(text) {
+    // Zalo.me support text param varies; safest: copy to clipboard + open chat.
+    // We'll do both: copy + open chat.
+    copyText(text);
+    window.open(ZALO_CHAT_URL, "_blank", "noopener");
+  }
 
-/* =========================
-   TILT
-========================= */
-const tilt = $("#tiltCard");
-if(tilt){
-  tilt.addEventListener("pointermove", (e) => {
-    const r = tilt.getBoundingClientRect();
-    const px = (e.clientX - r.left) / r.width;
-    const py = (e.clientY - r.top) / r.height;
-    const rx = (py - 0.5) * -10;
-    const ry = (px - 0.5) * 12;
-    tilt.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) translateY(-2px)`;
-    const shine = tilt.querySelector(".card__shine");
-    if(shine){
-      shine.style.transform = `translate3d(${(px - 0.5) * 40}px, ${(py - 0.5) * 30}px, 40px)`;
-    }
-  });
-  tilt.addEventListener("pointerleave", () => {
-    tilt.style.transform = "rotateX(0deg) rotateY(0deg) translateY(0px)";
-    const shine = tilt.querySelector(".card__shine");
-    if(shine) shine.style.transform = "translate3d(0,0,40px)";
-  });
-}
-
-/* =========================
-   COPY PHONE
-========================= */
-function bindCopy(btnId){
-  const btn = document.getElementById(btnId);
-  if(!btn) return;
-  btn.addEventListener("click", async () => {
-    const phone = btn.dataset.phone || SHOP.phone;
-    const old = btn.textContent;
-    try{
-      await navigator.clipboard.writeText(phone);
-      btn.textContent = "Đã copy: " + phone;
-    }catch{
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Đã copy nội dung. Mở Zalo dán vào là xong ✅");
+    } catch {
+      // fallback
       const ta = document.createElement("textarea");
-      ta.value = phone;
+      ta.value = text;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand("copy");
       ta.remove();
-      btn.textContent = "Đã copy: " + phone;
+      toast("Đã copy nội dung (fallback) ✅");
     }
-    setTimeout(()=> btn.textContent = old, 1200);
-  });
-}
-bindCopy("copyPhone");
-bindCopy("copyPhone2");
+  }
 
-/* =========================
-   PRODUCTS (12 SẢN PHẨM)
-   Ảnh: assets/products/p1.jpg ... p12.jpg
-========================= */
-const PRODUCTS = [
-  { id:"p1",  code:"LY01", name:"Váy baby-doll phối nơ",         cat:"dress", price:199000, hot:98, note:"Màu: kem/đen • Size: S/M/L",     img:"assets/products/p1.jpg" },
-  { id:"p2",  code:"LY02", name:"Áo croptop rib basic",          cat:"top",   price:119000, hot:93, note:"Màu: trắng/đen/hồng • Freesize",  img:"assets/products/p2.jpg" },
-  { id:"p3",  code:"LY03", name:"Quần ống suông cạp cao",        cat:"pants", price:229000, hot:90, note:"Màu: đen/xám • Size: S/M/L",     img:"assets/products/p3.jpg" },
-  { id:"p4",  code:"LY04", name:"Set áo + chân váy tennis",      cat:"set",   price:269000, hot:97, note:"Màu: trắng/đen • Size: S/M",     img:"assets/products/p4.jpg" },
-  { id:"p5",  code:"LY05", name:"Váy body tôn dáng",             cat:"dress", price:239000, hot:89, note:"Màu: đen/đỏ • Size: S/M/L",       img:"assets/products/p5.jpg" },
-  { id:"p6",  code:"LY06", name:"Áo sơ mi form rộng",            cat:"top",   price:199000, hot:84, note:"Màu: trắng/xanh • Freesize",      img:"assets/products/p6.jpg" },
-  { id:"p7",  code:"LY07", name:"Chân váy chữ A basic",          cat:"dress", price:149000, hot:86, note:"Màu: đen/nâu • Size: S/M/L",      img:"assets/products/p7.jpg" },
-  { id:"p8",  code:"LY08", name:"Áo thun oversize in chữ",       cat:"top",   price:129000, hot:88, note:"Màu: trắng/đen • Freesize",       img:"assets/products/p8.jpg" },
-  { id:"p9",  code:"LY09", name:"Quần jean nữ ống đứng",         cat:"pants", price:259000, hot:92, note:"Màu: xanh nhạt/đậm • Size: S/M/L", img:"assets/products/p9.jpg" },
-  { id:"p10", code:"LY10", name:"Set len tăm ôm dáng",           cat:"set",   price:289000, hot:85, note:"Màu: be/đen • Size: S/M",          img:"assets/products/p10.jpg" },
-  { id:"p11", code:"LY11", name:"Váy hoa vintage cổ vuông",      cat:"dress", price:219000, hot:91, note:"Màu: hoa xanh/hoa hồng • Size: S/M/L", img:"assets/products/p11.jpg" },
-  { id:"p12", code:"LY12", name:"Áo cardigan mỏng phối nút",      cat:"top",   price:179000, hot:83, note:"Màu: be/hồng/đen • Freesize",     img:"assets/products/p12.jpg" }
+  // tiny toast
+  let toastTimer = null;
+  function toast(msg) {
+    let el = $("#toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "toast";
+      el.style.position = "fixed";
+      el.style.left = "50%";
+      el.style.bottom = "18px";
+      el.style.transform = "translateX(-50%)";
+      el.style.zIndex = "9999";
+      el.style.padding = "12px 14px";
+      el.style.borderRadius = "999px";
+      el.style.background = "rgba(0,0,0,.55)";
+      el.style.border = "1px solid rgba(255,255,255,.18)";
+      el.style.backdropFilter = "blur(8px)";
+      el.style.color = "white";
+      el.style.fontWeight = "900";
+      el.style.maxWidth = "92vw";
+      el.style.textAlign = "center";
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.opacity = "1";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (el.style.opacity = "0"), 2400);
+  }
+
+  // =========================
+  // PRODUCTS (12 items)
+  // =========================
+  const products = [
+  {
+    id: "P01",
+    code: "V01",
+    name: "Áo Khoác Lông Nâu",
+    category: "dress",
+    price: 189000,
+    hot: 98,
+    color: "Nâu",
+    size: "S/M/L",
+    image: "./images/v01.jpg"
+  },
+  {
+    id: "P02",
+    code: "V02",
+    name: "Áo Khoác Lông Caro Trắng Đen ",
+    category: "dress",
+    price: 229000,
+    hot: 92,
+    color: "Đen",
+    size: "S/M/L",
+    image: "./images/v02.jpg"
+  },
+  {
+    id: "P03",
+    code: "V03",
+    name: "Váy Hoa Vintage",
+    category: "dress",
+    price: 209000,
+    hot: 88,
+    color: "Kem",
+    size: "S/M",
+    image: "./images/v03.jpg"
+  },
+  {
+    id: "P04",
+    code: "V04",
+    name: "Váy Trễ Vai",
+    category: "dress",
+    price: 199000,
+    hot: 86,
+    color: "Trắng",
+    size: "S/M/L",
+    image: "./images/v04.jpg"
+  },
+
+  {
+    id: "P05",
+    code: "A01",
+    name: "Áo Thun Oversize",
+    category: "top",
+    price: 149000,
+    hot: 90,
+    color: "Trắng",
+    size: "Free",
+    image: "./images/v05.jpg"
+  },
+  {
+    id: "P06",
+    code: "A02",
+    name: "Áo Croptop Gân",
+    category: "top",
+    price: 129000,
+    hot: 87,
+    color: "Đen",
+    size: "S/M",
+    image: "./images/v06.jpg"
+  },
+  {
+    id: "P07",
+    code: "A03",
+    name: "Áo Sơ Mi Form Rộng",
+    category: "top",
+    price: 219000,
+    hot: 83,
+    color: "Xanh",
+    size: "S/M/L",
+    image: "./images/v07.jpg"
+  },
+
+  {
+    id: "P08",
+    code: "Q01",
+    name: "Quần Ống Suông",
+    category: "pants",
+    price: 239000,
+    hot: 89,
+    color: "Be",
+    size: "S/M/L",
+    image: "./images/v08.jpg"
+  },
+  {
+    id: "P09",
+    code: "Q02",
+    name: "Quần Jeans Lưng Cao",
+    category: "pants",
+    price: 259000,
+    hot: 85,
+    color: "Xanh Jeans",
+    size: "S/M/L",
+    image: "./images/v09.jpg"
+  },
+  {
+    id: "P10",
+    code: "Q03",
+    name: "Quần Short Kaki",
+    category: "pants",
+    price: 169000,
+    hot: 80,
+    color: "Kem",
+    size: "S/M",
+    image: "./images/v10.jpg"
+  },
+
+  {
+    id: "P11",
+    code: "S01",
+    name: "Set Áo",
+    category: "set",
+    price: 319000,
+    hot: 94,
+    color: "Trắng",
+    size: "S/M",
+    image: "./images/v11.jpg"
+  },
+  {
+    id: "P12",
+    code: "S02",
+    name: "Set Thể Thao",
+    category: "set",
+    price: 289000,
+    hot: 82,
+    color: "Đen",
+    size: "Free",
+    image: "./images/v12.jpg"
+  }
 ];
 
-const CAT_LABEL = { all:"Tất cả", dress:"Váy", top:"Áo", pants:"Quần", set:"Set" };
+  // =========================
+  // STATE
+  // =========================
+  const state = {
+    filter: "all",
+    q: "",
+    sort: "hot",
+    cart: loadCart(),
+  };
 
-// ===== Render products =====
-const grid = $("#productGrid");
-const searchInput = $("#searchInput");
-const sortSelect = $("#sortSelect");
-const filterBtns = $$(".chipbtn[data-filter]");
-
-let state = { filter: "all", q: "", sort: "hot" };
-
-function cardTemplate(p){
-  const imgHtml = p.img
-    ? `<img src="${p.img}" alt="${p.name}" loading="lazy"
-         onerror="this.remove(); this.parentElement.insertAdjacentHTML('beforeend','<div class=img-fallback></div>')">`
-    : `<div class="img-fallback"></div>`;
-
-  return `
-    <article class="card glass reveal" data-reveal="1" data-id="${p.id}" data-cat="${p.cat}">
-      <div class="card__img">${imgHtml}</div>
-      <div class="card__row">
-        <div>
-          <div class="card__title">${p.name}</div>
-          <div class="card__meta">Mã: <b>${p.code || p.id}</b> • ${CAT_LABEL[p.cat]} • ${p.note}</div>
-        </div>
-        <div>
-          <div class="kicker">Hot</div>
-          <div class="price">${VND(p.price)}</div>
-        </div>
-      </div>
-      <div class="card__actions">
-        <button class="smallbtn smallbtn--primary" data-add="${p.id}" type="button">Thêm giỏ</button>
-        <button class="smallbtn" data-buy="${p.id}" type="button">Mua nhanh</button>
-      </div>
-    </article>
-  `;
-}
-
-function applyFilters(list){
-  const q = state.q.trim().toLowerCase();
-  let out = list.filter(p => (state.filter === "all" ? true : p.cat === state.filter));
-  if(q){
-    out = out.filter(p => (p.name + " " + p.note + " " + (p.code||"") + " " + CAT_LABEL[p.cat]).toLowerCase().includes(q));
+  function loadCart() {
+    try {
+      const raw = localStorage.getItem("lyshop_cart");
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
   }
-  if(state.sort === "hot") out.sort((a,b)=> b.hot - a.hot);
-  if(state.sort === "priceAsc") out.sort((a,b)=> a.price - b.price);
-  if(state.sort === "priceDesc") out.sort((a,b)=> b.price - a.price);
-  return out;
-}
 
-function render(){
-  if(!grid) return;
-  const items = applyFilters([...PRODUCTS]);
-  grid.innerHTML = items.map(cardTemplate).join("");
-
-  // observe new reveals
-  const newReveals = $$("[data-reveal='1']");
-  if(io){
-    newReveals.forEach(el => io.observe(el));
-  }else{
-    newReveals.forEach(el => el.classList.add("in"));
+  function saveCart() {
+    localStorage.setItem("lyshop_cart", JSON.stringify(state.cart));
   }
-}
-render();
 
-searchInput?.addEventListener("input", (e) => { state.q = e.target.value || ""; render(); });
-sortSelect?.addEventListener("change", (e) => { state.sort = e.target.value; render(); });
-
-filterBtns.forEach(btn => {
-  btn.addEventListener("click", () => {
-    filterBtns.forEach(b => b.classList.remove("is-active"));
-    btn.classList.add("is-active");
-    state.filter = btn.dataset.filter;
-    render();
-  });
-});
-
-/* =========================
-   CART
-========================= */
-let cart = new Map(); // id -> qty
-
-const cartDrawer = $("#cartDrawer");
-const cartItems = $("#cartItems");
-const cartCount = $("#cartCount");
-const cartCountMobile = $("#cartCountMobile");
-const cartSubtotal = $("#cartSubtotal");
-const zaloCheckout = $("#zaloCheckout");
-
-function openDrawer(){
-  if(!cartDrawer) return;
-  cartDrawer.classList.add("is-open");
-  cartDrawer.setAttribute("aria-hidden", "false");
-  document.body.style.overflow = "hidden";
-}
-function closeDrawer(){
-  if(!cartDrawer) return;
-  cartDrawer.classList.remove("is-open");
-  cartDrawer.setAttribute("aria-hidden", "true");
-  document.body.style.overflow = "";
-}
-
-$("#openCart")?.addEventListener("click", openDrawer);
-$("#openCartMobile")?.addEventListener("click", openDrawer);
-$("#closeCart")?.addEventListener("click", closeDrawer);
-$("#drawerBackdrop")?.addEventListener("click", closeDrawer);
-
-$("#clearCart")?.addEventListener("click", () => {
-  cart.clear();
-  syncCartUI();
-});
-
-function addToCart(id, qty=1){
-  cart.set(id, (cart.get(id) || 0) + qty);
-  syncCartUI();
-}
-function removeFromCart(id){ cart.delete(id); syncCartUI(); }
-function setQty(id, qty){ qty <= 0 ? cart.delete(id) : cart.set(id, qty); syncCartUI(); }
-
-function cartList(){
-  const arr = [];
-  for(const [id, qty] of cart.entries()){
-    const p = PRODUCTS.find(x => x.id === id);
-    if(p) arr.push({ ...p, qty });
+  function cartCount() {
+    return Object.values(state.cart).reduce((sum, it) => sum + it.qty, 0);
   }
-  return arr;
-}
 
-function buildZaloMessage(items, subtotal){
-  const lines = [
-    `Hi ${SHOP.name}, mình muốn đặt đơn:`,
-    ...items.map((it, idx)=> `${idx+1}) ${it.name} (Mã ${it.code || it.id}) • SL: ${it.qty} • Giá: ${VND(it.price)} • ${it.note}`),
-    `Tạm tính: ${VND(subtotal)}`,
-    `Ghi chú: (màu/size/địa chỉ giúp mình)`,
-    `—`,
-    `TikTok: ${SHOP.tiktokName} (${SHOP.tiktokId})`
-  ];
-  return lines.join("\n");
-}
+  function cartSubtotal() {
+    return Object.values(state.cart).reduce((sum, it) => sum + it.qty * it.price, 0);
+  }
 
-function syncCartUI(){
-  const items = cartList();
-  const count = items.reduce((s,it)=> s + it.qty, 0);
-  const subtotal = items.reduce((s,it)=> s + it.qty*it.price, 0);
+  // =========================
+  // RENDER
+  // =========================
+  function renderProducts() {
+    const grid = $("#productGrid");
+    if (!grid) return;
 
-  if(cartCount) cartCount.textContent = String(count);
-  if(cartCountMobile) cartCountMobile.textContent = String(count);
-  if(cartSubtotal) cartSubtotal.textContent = VND(subtotal);
+    const list = products
+      .filter(p => state.filter === "all" ? true : p.category === state.filter)
+      .filter(p => {
+        const q = state.q.trim().toLowerCase();
+        if (!q) return true;
+        const hay = `${p.name} ${p.code} ${p.color} ${p.size} ${p.category}`.toLowerCase();
+        return hay.includes(q);
+      })
+      .sort((a, b) => {
+        if (state.sort === "priceAsc") return a.price - b.price;
+        if (state.sort === "priceDesc") return b.price - a.price;
+        return (b.hot ?? 0) - (a.hot ?? 0);
+      });
 
-  if(cartItems){
-    if(items.length === 0){
-      cartItems.innerHTML = `
-        <div class="glass" style="padding:14px;border-radius:18px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);">
-          Giỏ hàng đang trống. Chọn vài món “hot” bên dưới nhé ✨
+    grid.innerHTML = list.map(p => `
+      <article class="card glass">
+        <div class="card__img">
+          <img src="${p.image}" alt="${escapeXml(p.name)}" loading="lazy">
         </div>
-      `;
-    } else {
-      cartItems.innerHTML = items.map(it => `
-        <div class="cartitem">
+
+        <div class="card__row">
           <div>
-            <div class="cartitem__name">${it.name}</div>
-            <div class="cartitem__meta">Mã <b>${it.code || it.id}</b> • ${CAT_LABEL[it.cat]} • ${VND(it.price)} • ${it.note}</div>
-            <div class="cartitem__meta"><b>Thành tiền:</b> ${VND(it.price * it.qty)}</div>
+            <div class="card__title">${escapeXml(p.name)}</div>
+            <div class="card__meta">
+              <span class="kicker">Mã: <b>${escapeXml(p.code)}</b></span>
+              <div style="margin-top:8px;">
+                Màu: <b>${escapeXml(p.color)}</b> • Size: <b>${escapeXml(p.size)}</b>
+              </div>
+            </div>
           </div>
-          <div class="qty">
-            <button type="button" data-dec="${it.id}">−</button>
-            <b style="min-width:18px;text-align:center;">${it.qty}</b>
-            <button type="button" data-inc="${it.id}">＋</button>
-            <button type="button" data-del="${it.id}" title="Xóa" aria-label="Xóa">🗑️</button>
+          <div class="price">${fmtVND(p.price)}</div>
+        </div>
+
+        <div class="card__actions">
+          <button class="smallbtn smallbtn--primary" data-add="${p.id}">➕ Thêm giỏ</button>
+          <button class="smallbtn" data-buy="${p.id}">⚡ Mua nhanh</button>
+        </div>
+      </article>
+    `).join("");
+
+    // bind buttons
+    $$("[data-add]", grid).forEach(btn => {
+      btn.addEventListener("click", () => addToCart(btn.dataset.add));
+    });
+    $$("[data-buy]", grid).forEach(btn => {
+      btn.addEventListener("click", () => quickBuy(btn.dataset.buy));
+    });
+  }
+
+  function renderCartUI() {
+    $("#cartCount").textContent = String(cartCount());
+    $("#cartCountMobile").textContent = String(cartCount());
+    $("#cartSubtotal").textContent = fmtVND(cartSubtotal());
+
+    const wrap = $("#cartItems");
+    if (!wrap) return;
+
+    const items = Object.values(state.cart);
+    if (items.length === 0) {
+      wrap.innerHTML = `<div class="muted" style="padding:10px 0; font-weight:900;">Chưa có sản phẩm nào trong giỏ.</div>`;
+      $("#zaloCheckout").href = ZALO_CHAT_URL;
+      return;
+    }
+
+    wrap.innerHTML = items.map(it => `
+      <div class="cartitem">
+        <div>
+          <div class="cartitem__name">${escapeXml(it.name)} <span class="muted">(${escapeXml(it.code)})</span></div>
+          <div class="cartitem__meta">
+            Màu: <b>${escapeXml(it.color)}</b> • Size: <b>${escapeXml(it.size)}</b><br/>
+            Giá: <b>${fmtVND(it.price)}</b>
           </div>
         </div>
-      `).join("");
+        <div class="qty">
+          <button data-dec="${it.id}" aria-label="Giảm">−</button>
+          <div style="min-width:22px;text-align:center;font-weight:1000;">${it.qty}</div>
+          <button data-inc="${it.id}" aria-label="Tăng">+</button>
+        </div>
+      </div>
+    `).join("");
 
-      $$("[data-inc]").forEach(b => b.onclick = () => addToCart(b.dataset.inc, 1));
-      $$("[data-dec]").forEach(b => b.onclick = () => setQty(b.dataset.dec, (cart.get(b.dataset.dec) || 1) - 1));
-      $$("[data-del]").forEach(b => b.onclick = () => removeFromCart(b.dataset.del));
-    }
+    $$("[data-inc]", wrap).forEach(b => b.addEventListener("click", () => inc(b.dataset.inc)));
+    $$("[data-dec]", wrap).forEach(b => b.addEventListener("click", () => dec(b.dataset.dec)));
+
+    // update checkout click: copy message then open zalo chat
+    const text = buildZaloMessage(items.map(it => ({
+      code: it.code, name: it.name, color: it.color, size: it.size, qty: it.qty
+    })));
+
+    const checkout = $("#zaloCheckout");
+    checkout.onclick = (e) => {
+      e.preventDefault();
+      openZaloWithText(text);
+    };
   }
 
-  const msg = buildZaloMessage(items, subtotal);
-  const zaloUrl = `${SHOP.zaloLink}?chat&msg=${encodeURIComponent(msg)}`;
-  if(zaloCheckout) zaloCheckout.href = zaloUrl;
-}
-syncCartUI();
+  // =========================
+  // CART ACTIONS
+  // =========================
+  function addToCart(productId) {
+    const p = products.find(x => x.id === productId);
+    if (!p) return;
 
-$("#quickAdd")?.addEventListener("click", () => {
-  addToCart("p4", 1);
-  openDrawer();
-});
+    const existed = state.cart[p.id];
+    state.cart[p.id] = existed
+      ? { ...existed, qty: existed.qty + 1 }
+      : { id: p.id, code: p.code, name: p.name, price: p.price, color: p.color, size: p.size, qty: 1 };
 
-document.addEventListener("click", (e) => {
-  const t = e.target;
-  const addId = t?.dataset?.add;
-  const buyId = t?.dataset?.buy;
-  if(addId){ addToCart(addId, 1); return; }
-  if(buyId){ addToCart(buyId, 1); openDrawer(); return; }
-});
-
-/* =========================
-   PARTICLES (Canvas)
-========================= */
-const canvas = $("#particles");
-const ctx = canvas?.getContext?.("2d", { alpha: true });
-
-if(canvas && ctx){
-  let W = 0, H = 0, DPR = 1;
-  function resize(){
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
-    W = Math.floor(window.innerWidth);
-    H = Math.floor(window.innerHeight);
-    canvas.width = Math.floor(W * DPR);
-    canvas.height = Math.floor(H * DPR);
-    canvas.style.width = W + "px";
-    canvas.style.height = H + "px";
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    saveCart();
+    renderCartUI();
+    toast(`Đã thêm: ${p.code} ✅`);
   }
-  window.addEventListener("resize", resize, { passive: true });
-  resize();
 
-  const rand = (a,b)=> a + Math.random()*(b-a);
-  const colors = [
-    "rgba(255,77,141,.55)",
-    "rgba(124,58,237,.45)",
-    "rgba(6,182,212,.35)",
-    "rgba(255,255,255,.22)"
-  ];
+  function quickBuy(productId) {
+    const p = products.find(x => x.id === productId);
+    if (!p) return;
 
-  let mouse = { x: W/2, y: H/2, active:false };
-  window.addEventListener("pointermove", (e) => { mouse.x = e.clientX; mouse.y = e.clientY; mouse.active = true; }, { passive:true });
-  window.addEventListener("pointerleave", () => mouse.active = false, { passive:true });
+    const msg = buildZaloMessage([{ code: p.code, name: p.name, color: p.color, size: p.size, qty: 1 }]);
+    openZaloWithText(msg);
+  }
 
-  const COUNT = Math.floor(clamp((W*H)/24000, 40, 110));
-  const particles = Array.from({length: COUNT}).map(() => ({
-    x: rand(0, W),
-    y: rand(0, H),
-    r: rand(1.2, 3.2),
-    vx: rand(-0.38, 0.38),
-    vy: rand(-0.28, 0.28),
-    c: colors[Math.floor(Math.random()*colors.length)]
-  }));
+  function inc(id) {
+    if (!state.cart[id]) return;
+    state.cart[id].qty += 1;
+    saveCart();
+    renderCartUI();
+  }
 
-  function step(){
-    ctx.clearRect(0,0,W,H);
+  function dec(id) {
+    if (!state.cart[id]) return;
+    state.cart[id].qty -= 1;
+    if (state.cart[id].qty <= 0) delete state.cart[id];
+    saveCart();
+    renderCartUI();
+  }
 
-    const g = ctx.createRadialGradient(W*0.5, H*0.4, 50, W*0.5, H*0.4, Math.max(W,H)*0.85);
-    g.addColorStop(0, "rgba(255,255,255,.03)");
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0,0,W,H);
+  function clearCart() {
+    state.cart = {};
+    saveCart();
+    renderCartUI();
+    toast("Đã xóa giỏ ✅");
+  }
 
-    for (const p of particles){
-      p.x += p.vx;
-      p.y += p.vy;
+  // =========================
+  // UI: drawer / menu / filters
+  // =========================
+  function openDrawer() {
+    const d = $("#cartDrawer");
+    d.classList.add("is-open");
+    d.setAttribute("aria-hidden", "false");
+  }
+  function closeDrawer() {
+    const d = $("#cartDrawer");
+    d.classList.remove("is-open");
+    d.setAttribute("aria-hidden", "true");
+  }
 
-      if(mouse.active){
-        const dx = mouse.x - p.x;
-        const dy = mouse.y - p.y;
-        const dist = Math.hypot(dx,dy);
-        if(dist < 160){
-          p.x -= dx * 0.002;
-          p.y -= dy * 0.002;
-        }
+  function setupFilters() {
+    const chips = $$(".filters .chipbtn");
+    chips.forEach(btn => {
+      btn.addEventListener("click", () => {
+        chips.forEach(x => x.classList.remove("is-active"));
+        btn.classList.add("is-active");
+        state.filter = btn.dataset.filter || "all";
+        renderProducts();
+      });
+    });
+  }
+
+  function setupSearchSort() {
+    $("#searchInput").addEventListener("input", (e) => {
+      state.q = e.target.value || "";
+      renderProducts();
+    });
+    $("#sortSelect").addEventListener("change", (e) => {
+      state.sort = e.target.value || "hot";
+      renderProducts();
+    });
+  }
+
+  function setupMobileMenu() {
+    const ham = $("#hamburger");
+    const menu = $("#mobileMenu");
+    ham.addEventListener("click", () => {
+      const open = menu.hasAttribute("hidden") === false;
+      if (open) {
+        menu.hidden = true;
+        ham.setAttribute("aria-expanded", "false");
+      } else {
+        menu.hidden = false;
+        ham.setAttribute("aria-expanded", "true");
       }
+    });
 
-      if(p.x < -20) p.x = W + 20;
-      if(p.x > W + 20) p.x = -20;
-      if(p.y < -20) p.y = H + 20;
-      if(p.y > H + 20) p.y = -20;
-
-      ctx.beginPath();
-      ctx.fillStyle = p.c;
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-      ctx.fill();
-    }
-
-    for(let i=0;i<particles.length;i++){
-      for(let j=i+1;j<particles.length;j++){
-        const a = particles[i], b = particles[j];
-        const dx = a.x - b.x, dy = a.y - b.y;
-        const d = Math.hypot(dx,dy);
-        if(d < 120){
-          ctx.strokeStyle = `rgba(255,255,255,${(1 - d/120) * 0.10})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(a.x,a.y);
-          ctx.lineTo(b.x,b.y);
-          ctx.stroke();
-        }
-      }
-    }
-    requestAnimationFrame(step);
+    // close on click
+    $$("a", menu).forEach(a => a.addEventListener("click", () => {
+      menu.hidden = true;
+      ham.setAttribute("aria-expanded", "false");
+    }));
   }
-  step();
-}
+
+  // Theme (auto/light/dark)
+  function applyTheme(mode) {
+    const html = document.documentElement;
+    let theme = mode;
+
+    if (mode === "auto") {
+      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    }
+
+    html.classList.add("theme-anim");
+    html.setAttribute("data-theme", theme);
+
+    const icon = theme === "light" ? "☀️" : "🌙";
+    const text = theme === "light" ? "Sáng" : "Tối";
+    $("#themeIcon").textContent = icon;
+    $("#themeText").textContent = text;
+    $("#themeTextMobile").textContent = text;
+
+    localStorage.setItem("lyshop_theme_mode", mode);
+    setTimeout(() => html.classList.remove("theme-anim"), 260);
+  }
+
+  function setupTheme() {
+    const btn = $("#themeBtn");
+    const menu = $("#themeMenu");
+
+    const saved = localStorage.getItem("lyshop_theme_mode") || "dark";
+    applyTheme(saved);
+
+    btn.addEventListener("click", () => {
+      const isOpen = !menu.hidden;
+      menu.hidden = isOpen;
+      btn.setAttribute("aria-expanded", String(!isOpen));
+    });
+
+    // click outside
+    document.addEventListener("click", (e) => {
+      if (!menu) return;
+      if (menu.hidden) return;
+      if (menu.contains(e.target) || btn.contains(e.target)) return;
+      menu.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+    });
+
+    $$("[data-theme-mode]").forEach(opt => {
+      opt.addEventListener("click", () => {
+        const mode = opt.dataset.themeMode;
+        applyTheme(mode);
+        if (!menu.hidden) {
+          menu.hidden = true;
+          btn.setAttribute("aria-expanded", "false");
+        }
+      });
+    });
+
+    // auto mode react to system changes
+    window.matchMedia?.("(prefers-color-scheme: light)")?.addEventListener?.("change", () => {
+      const mode = localStorage.getItem("lyshop_theme_mode") || "dark";
+      if (mode === "auto") applyTheme("auto");
+    });
+  }
+
+  // reveal
+  function setupReveal() {
+    const els = $$(".reveal");
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(en => {
+        if (en.isIntersecting) en.target.classList.add("in");
+      });
+    }, { threshold: 0.12 });
+
+    els.forEach(el => {
+      const d = el.getAttribute("data-delay") || "0";
+      el.style.setProperty("--d", `${d}ms`);
+      io.observe(el);
+    });
+  }
+
+  // tilt card
+  function setupTilt() {
+    const card = $("#tiltCard");
+    if (!card) return;
+    card.addEventListener("mousemove", (e) => {
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width;
+      const y = (e.clientY - r.top) / r.height;
+      const rotY = (x - 0.5) * 10;
+      const rotX = -(y - 0.5) * 10;
+      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+    });
+    card.addEventListener("mouseleave", () => {
+      card.style.transform = `rotateX(0deg) rotateY(0deg)`;
+    });
+  }
+
+  // particles (nhẹ)
+  function setupParticles() {
+    const c = $("#particles");
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    let w = 0, h = 0;
+    const dots = Array.from({ length: 70 }, () => ({
+      x: Math.random(), y: Math.random(),
+      vx: (Math.random() - 0.5) * 0.0006,
+      vy: (Math.random() - 0.5) * 0.0006,
+      r: 1.2 + Math.random() * 1.8
+    }));
+
+    const resize = () => {
+      w = c.width = window.innerWidth;
+      h = c.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resize);
+    resize();
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = "rgba(255,255,255,.65)";
+
+      for (const d of dots) {
+        d.x += d.vx;
+        d.y += d.vy;
+        if (d.x < 0) d.x = 1;
+        if (d.x > 1) d.x = 0;
+        if (d.y < 0) d.y = 1;
+        if (d.y > 1) d.y = 0;
+
+        const px = d.x * w, py = d.y * h;
+        ctx.beginPath();
+        ctx.arc(px, py, d.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  // hero button: copy phone
+  function setupCopyButtons() {
+    const bind = (id) => {
+      const b = $(id);
+      if (!b) return;
+      b.addEventListener("click", () => {
+        const phone = b.dataset.phone || ZALO_PHONE;
+        copyText(phone);
+        toast("Đã copy SĐT/Zalo ✅");
+      });
+    };
+    bind("#copyPhone");
+    bind("#copyPhone2");
+  }
+
+  // cart buttons
+  function setupCartButtons() {
+    $("#openCart").addEventListener("click", openDrawer);
+    $("#openCartMobile").addEventListener("click", openDrawer);
+    $("#closeCart").addEventListener("click", closeDrawer);
+    $("#drawerBackdrop").addEventListener("click", closeDrawer);
+    $("#clearCart").addEventListener("click", clearCart);
+
+    // ESC close
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeDrawer();
+    });
+  }
+
+  // quick add: add hottest
+  function setupQuickAdd() {
+    $("#quickAdd").addEventListener("click", () => {
+      const hot = [...products].sort((a,b)=> (b.hot??0)-(a.hot??0))[0];
+      addToCart(hot.id);
+      openDrawer();
+    });
+  }
+
+  // mouse highlight for primary button
+  function setupBtnGlow() {
+    $$(".btn--primary").forEach(btn => {
+      btn.addEventListener("mousemove", (e) => {
+        const r = btn.getBoundingClientRect();
+        const mx = ((e.clientX - r.left) / r.width) * 100;
+        const my = ((e.clientY - r.top) / r.height) * 100;
+        btn.style.setProperty("--mx", `${mx}%`);
+        btn.style.setProperty("--my", `${my}%`);
+      });
+    });
+  }
+
+  // =========================
+  // INIT
+  // =========================
+  function init() {
+    $("#year").textContent = String(new Date().getFullYear());
+
+    setupTheme();
+    setupMobileMenu();
+    setupReveal();
+    setupTilt();
+    setupParticles();
+    setupCopyButtons();
+    setupCartButtons();
+    setupFilters();
+    setupSearchSort();
+    setupQuickAdd();
+    setupBtnGlow();
+
+    renderProducts();
+    renderCartUI();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
