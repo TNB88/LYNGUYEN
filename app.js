@@ -95,10 +95,18 @@ bindCopy("copyPhone2");
 
 /* ========= PRODUCTS ========= */
 const PRODUCTS = [
-  { id:"p1", code:"LY01", name:"Váy baby-doll phối nơ", cat:"dress", price:199000, note:"Màu: kem/đen • Size S/M/L", img:"assets/products/p1.jpg" },
-  { id:"p2", code:"LY02", name:"Áo croptop rib basic", cat:"top", price:119000, note:"Trắng/đen/hồng", img:"assets/products/p2.jpg" },
-  { id:"p3", code:"LY03", name:"Quần ống suông cạp cao", cat:"pants", price:229000, note:"Đen/xám", img:"assets/products/p3.jpg" },
-  { id:"p4", code:"LY04", name:"Set áo + chân váy tennis", cat:"set", price:269000, note:"Trắng/đen", img:"assets/products/p4.jpg" }
+  { id:"p1", code:"LY01", name:"Váy baby-doll phối nơ", cat:"dress", price:199000, hot:98, note:"Màu: kem/đen • Size: S/M/L", img:"assets/products/p1.jpg" },
+  { id:"p2", code:"LY02", name:"Áo croptop rib basic",  cat:"top",   price:119000, hot:93, note:"Màu: trắng/đen/hồng • Freesize", img:"assets/products/p2.jpg" },
+  { id:"p3", code:"LY03", name:"Quần ống suông cạp cao", cat:"pants", price:229000, hot:90, note:"Màu: đen/xám • Size: S/M/L", img:"assets/products/p3.jpg" },
+  { id:"p4", code:"LY04", name:"Set áo + chân váy tennis",cat:"set",  price:269000, hot:97, note:"Màu: trắng/đen • Size: S/M", img:"assets/products/p4.jpg" },
+  { id:"p5", code:"LY05", name:"Váy body tôn dáng",      cat:"dress", price:239000, hot:89, note:"Màu: đen/đỏ • Size: S/M/L", img:"assets/products/p5.jpg" },
+  { id:"p6", code:"LY06", name:"Áo sơ mi form rộng",     cat:"top",   price:199000, hot:84, note:"Màu: trắng/xanh • Freesize", img:"assets/products/p6.jpg" }
+  { id:"p7", code:"LY07", name:"Váy baby-doll phối nơ", cat:"dress", price:199000, hot:98, note:"Màu: kem/đen • Size: S/M/L", img:"assets/products/p7.jpg" },
+  { id:"p8", code:"LY08", name:"Áo croptop rib basic",  cat:"top",   price:129000, hot:93, note:"Màu: trắng/đen/hồng • Freesize", img:"assets/products/p8.jpg" },
+  { id:"p9", code:"LY09", name:"Quần ống suông cạp cao", cat:"pants", price:124000, hot:90, note:"Màu: đen/xám • Size: S/M/L", img:"assets/products/p9.jpg" },
+  { id:"p10", code:"LY10", name:"Set áo + chân váy tennis",cat:"set",  price:269000, hot:97, note:"Màu: trắng/đen • Size: S/M", img:"assets/products/p10.jpg" },
+  { id:"p11", code:"LY11", name:"Váy body tôn dáng",      cat:"dress", price:239000, hot:89, note:"Màu: đen/đỏ • Size: S/M/L", img:"assets/products/p11.jpg" },
+  { id:"p12", code:"LY12", name:"Áo sơ mi form rộng",     cat:"top",   price:199000, hot:84, note:"Màu: trắng/xanh • Freesize", img:"assets/products/p12.jpg" }
 ];
 
 const CAT_LABEL = { dress:"Váy", top:"Áo", pants:"Quần", set:"Set" };
