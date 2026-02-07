@@ -42,7 +42,7 @@ html[data-theme="light"]{
            radial-gradient(60% 70% at 50% 90%, rgba(6,182,212,.14), transparent 65%);
 }
 
-/* Smooth theme transitions (only when toggling) */
+/* Smooth theme transitions */
 html.theme-anim, html.theme-anim *{
   transition: background-color .22s ease, color .22s ease, border-color .22s ease, box-shadow .22s ease, opacity .22s ease;
 }
@@ -161,6 +161,7 @@ html[data-theme="light"] .badge{
   border-radius: 14px;
   border:1px solid var(--btnBd);
   background: var(--btnBg);
+  cursor:pointer;
 }
 .hamburger span{
   display:block;
@@ -571,9 +572,9 @@ html[data-theme="light"] .select select{
   overflow:hidden;
 }
 
-/* ✅ Khung 2:3 đúng ảnh 1706×2560 */
+/* Khung 2:3 */
 .card__img{
-  aspect-ratio: 1706 / 2560; /* ~ 2/3 */
+  aspect-ratio: 1706 / 2560;
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,.10);
   background: rgba(255,255,255,.05);
@@ -585,12 +586,6 @@ html[data-theme="light"] .select select{
   object-fit: cover;
   object-position: 50% 50%;
   display:block;
-}
-.img-fallback{
-  width:100%; height:100%;
-  background: radial-gradient(240px 120px at 20% 20%, rgba(255,77,141,.22), transparent 60%),
-              radial-gradient(260px 160px at 75% 40%, rgba(124,58,237,.22), transparent 65%),
-              radial-gradient(260px 160px at 50% 85%, rgba(6,182,212,.18), transparent 65%);
 }
 
 .card__row{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-top: 12px; }
@@ -785,7 +780,6 @@ html[data-theme="light"] .mini-pill{
   cursor:pointer;
   font-weight:1000;
 }
-
 .drawer__foot{
   padding: 14px 16px 16px;
   border-top: 1px solid rgba(255,255,255,.08);
