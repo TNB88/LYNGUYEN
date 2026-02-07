@@ -1,276 +1,43 @@
 (() => {
   "use strict";
 
-  // =========================
-  // CONFIG
-  // =========================
   const ZALO_PHONE = "0939617080";
-  const TIKTOK_URL = "https://www.tiktok.com/@tho.ly.nguyn32";
   const ZALO_CHAT_URL = `https://zalo.me/${ZALO_PHONE}`;
 
-  // =========================
-  // HELPERS
-  // =========================
+  // ====== LIVE CONFIG ======
+  // Đổi giờ live tại đây (24h). Ví dụ 20:00 => { hour: 20, minute: 0 }
+  const LIVE_SCHEDULE = [
+    { hour: 20, minute: 0 },  // mỗi ngày 20:00
+    // { hour: 14, minute: 0 }, // nếu muốn thêm ca live khác
+  ];
+
+  // Nhắc trước bao nhiêu phút (mặc định 10 phút)
+  const REMIND_BEFORE_MINUTES = 10;
+
   const $ = (s, root = document) => root.querySelector(s);
   const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
   const fmtVND = (n) => new Intl.NumberFormat("vi-VN").format(n) + "đ";
-  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
 
-  // SVG data-uri => luôn có ảnh, khỏi lo path
-  function svgDataUri({ title, code, colors }) {
-    const [c1, c2] = colors;
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="1706" height="2560" viewBox="0 0 1706 2560">
-        <defs>
-          <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="${c1}"/>
-            <stop offset="1" stop-color="${c2}"/>
-          </linearGradient>
-          <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="18"/>
-          </filter>
-        </defs>
-        <rect width="1706" height="2560" fill="url(#g)"/>
-        <circle cx="260" cy="420" r="220" fill="rgba(255,255,255,.18)" filter="url(#blur)"/>
-        <circle cx="1460" cy="720" r="260" fill="rgba(255,255,255,.14)" filter="url(#blur)"/>
-        <circle cx="920" cy="2000" r="360" fill="rgba(0,0,0,.18)" filter="url(#blur)"/>
-        <text x="90" y="240" fill="rgba(255,255,255,.92)" font-size="90" font-family="Inter, Arial" font-weight="900">Ly Shop</text>
-        <text x="90" y="340" fill="rgba(255,255,255,.85)" font-size="56" font-family="Inter, Arial" font-weight="800">${escapeXml(title)}</text>
-        <text x="90" y="430" fill="rgba(255,255,255,.78)" font-size="44" font-family="Inter, Arial" font-weight="800">Mã: ${escapeXml(code)}</text>
-        <text x="90" y="2420" fill="rgba(255,255,255,.88)" font-size="46" font-family="Inter, Arial" font-weight="900">Chốt đơn qua Zalo: ${ZALO_PHONE}</text>
-      </svg>
-    `.trim();
-
-    // encode for data-uri
-    const encoded = encodeURIComponent(svg)
-      .replace(/'/g, "%27")
-      .replace(/"/g, "%22");
-
-    return `data:image/svg+xml;charset=utf-8,${encoded}`;
-  }
-
-  function escapeXml(str) {
-    return String(str)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&apos;");
-  }
-
-  function buildZaloMessage(items) {
-    // items: [{code, name, color, size, qty}]
-    const lines = [
-      "Ly ơi chốt đơn giúp em nhé ❤️",
-      "",
-      ...items.map((it, i) => {
-        const c = it.color ? ` | Màu: ${it.color}` : "";
-        const s = it.size ? ` | Size: ${it.size}` : "";
-        return `${i + 1}) ${it.code} - ${it.name}${c}${s} | SL: ${it.qty}`;
-      }),
-      "",
-      "Địa chỉ nhận hàng: ...",
-      "SĐT người nhận: ...",
-    ];
-    return lines.join("\n");
-  }
-
-  function openZaloWithText(text) {
-    // Zalo.me support text param varies; safest: copy to clipboard + open chat.
-    // We'll do both: copy + open chat.
-    copyText(text);
-    window.open(ZALO_CHAT_URL, "_blank", "noopener");
-  }
-
-  async function copyText(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast("Đã copy nội dung. Mở Zalo dán vào là xong ✅");
-    } catch {
-      // fallback
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      ta.remove();
-      toast("Đã copy nội dung (fallback) ✅");
-    }
-  }
-
-  // tiny toast
-  let toastTimer = null;
-  function toast(msg) {
-    let el = $("#toast");
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "toast";
-      el.style.position = "fixed";
-      el.style.left = "50%";
-      el.style.bottom = "18px";
-      el.style.transform = "translateX(-50%)";
-      el.style.zIndex = "9999";
-      el.style.padding = "12px 14px";
-      el.style.borderRadius = "999px";
-      el.style.background = "rgba(0,0,0,.55)";
-      el.style.border = "1px solid rgba(255,255,255,.18)";
-      el.style.backdropFilter = "blur(8px)";
-      el.style.color = "white";
-      el.style.fontWeight = "900";
-      el.style.maxWidth = "92vw";
-      el.style.textAlign = "center";
-      document.body.appendChild(el);
-    }
-    el.textContent = msg;
-    el.style.opacity = "1";
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (el.style.opacity = "0"), 2400);
-  }
-
-  // =========================
-  // PRODUCTS (12 items)
-  // =========================
+  // ===== PRODUCTS (12) =====
   const products = [
-  {
-    id: "P01",
-    code: "V01",
-    name: "Áo Khoác Lông Nâu",
-    category: "dress",
-    price: 189000,
-    hot: 98,
-    color: "Nâu",
-    size: "S/M/L",
-    image: "./images/v01.jpg"
-  },
-  {
-    id: "P02",
-    code: "V02",
-    name: "Áo Khoác Lông Caro Trắng Đen ",
-    category: "dress",
-    price: 229000,
-    hot: 92,
-    color: "Đen",
-    size: "S/M/L",
-    image: "./images/v02.jpg"
-  },
-  {
-    id: "P03",
-    code: "V03",
-    name: "Váy Hoa Vintage",
-    category: "dress",
-    price: 209000,
-    hot: 88,
-    color: "Kem",
-    size: "S/M",
-    image: "./images/v03.jpg"
-  },
-  {
-    id: "P04",
-    code: "V04",
-    name: "Váy Trễ Vai",
-    category: "dress",
-    price: 199000,
-    hot: 86,
-    color: "Trắng",
-    size: "S/M/L",
-    image: "./images/v04.jpg"
-  },
+    { id: "P01", code: "V01", name: "Váy Babydoll Nơ", category: "dress", price: 189000, hot: 98, color: "Hồng", size: "S/M/L", image: "./images/v01.jpg" },
+    { id: "P02", code: "V02", name: "Váy Body Dài", category: "dress", price: 229000, hot: 92, color: "Đen", size: "S/M/L", image: "./images/v02.jpg" },
+    { id: "P03", code: "V03", name: "Váy Hoa Vintage", category: "dress", price: 209000, hot: 88, color: "Kem", size: "S/M", image: "./images/v03.jpg" },
+    { id: "P04", code: "V04", name: "Váy Trễ Vai", category: "dress", price: 199000, hot: 86, color: "Trắng", size: "S/M/L", image: "./images/v04.jpg" },
 
-  {
-    id: "P05",
-    code: "A01",
-    name: "Áo Thun Oversize",
-    category: "top",
-    price: 149000,
-    hot: 90,
-    color: "Trắng",
-    size: "Free",
-    image: "./images/v05.jpg"
-  },
-  {
-    id: "P06",
-    code: "A02",
-    name: "Áo Croptop Gân",
-    category: "top",
-    price: 129000,
-    hot: 87,
-    color: "Đen",
-    size: "S/M",
-    image: "./images/v06.jpg"
-  },
-  {
-    id: "P07",
-    code: "A03",
-    name: "Áo Sơ Mi Form Rộng",
-    category: "top",
-    price: 219000,
-    hot: 83,
-    color: "Xanh",
-    size: "S/M/L",
-    image: "./images/v07.jpg"
-  },
+    { id: "P05", code: "A01", name: "Áo Thun Oversize", category: "top", price: 149000, hot: 90, color: "Trắng", size: "Free", image: "./images/a01.jpg" },
+    { id: "P06", code: "A02", name: "Áo Croptop Gân", category: "top", price: 129000, hot: 87, color: "Đen", size: "S/M", image: "./images/a02.jpg" },
+    { id: "P07", code: "A03", name: "Áo Sơ Mi Form Rộng", category: "top", price: 219000, hot: 83, color: "Xanh", size: "S/M/L", image: "./images/a03.jpg" },
 
-  {
-    id: "P08",
-    code: "Q01",
-    name: "Quần Ống Suông",
-    category: "pants",
-    price: 239000,
-    hot: 89,
-    color: "Be",
-    size: "S/M/L",
-    image: "./images/v08.jpg"
-  },
-  {
-    id: "P09",
-    code: "Q02",
-    name: "Quần Jeans Lưng Cao",
-    category: "pants",
-    price: 259000,
-    hot: 85,
-    color: "Xanh Jeans",
-    size: "S/M/L",
-    image: "./images/v09.jpg"
-  },
-  {
-    id: "P10",
-    code: "Q03",
-    name: "Quần Short Kaki",
-    category: "pants",
-    price: 169000,
-    hot: 80,
-    color: "Kem",
-    size: "S/M",
-    image: "./images/v10.jpg"
-  },
+    { id: "P08", code: "Q01", name: "Quần Ống Suông", category: "pants", price: 239000, hot: 89, color: "Be", size: "S/M/L", image: "./images/q01.jpg" },
+    { id: "P09", code: "Q02", name: "Quần Jeans Lưng Cao", category: "pants", price: 259000, hot: 85, color: "Xanh Jeans", size: "S/M/L", image: "./images/q02.jpg" },
+    { id: "P10", code: "Q03", name: "Quần Short Kaki", category: "pants", price: 169000, hot: 80, color: "Kem", size: "S/M", image: "./images/q03.jpg" },
 
-  {
-    id: "P11",
-    code: "S01",
-    name: "Set Áo",
-    category: "set",
-    price: 319000,
-    hot: 94,
-    color: "Trắng",
-    size: "S/M",
-    image: "./images/v11.jpg"
-  },
-  {
-    id: "P12",
-    code: "S02",
-    name: "Set Thể Thao",
-    category: "set",
-    price: 289000,
-    hot: 82,
-    color: "Đen",
-    size: "Free",
-    image: "./images/v12.jpg"
-  }
-];
+    { id: "P11", code: "S01", name: "Set Áo + Chân Váy", category: "set", price: 319000, hot: 94, color: "Hồng", size: "S/M", image: "./images/s01.jpg" },
+    { id: "P12", code: "S02", name: "Set Thể Thao", category: "set", price: 289000, hot: 82, color: "Đen", size: "Free", image: "./images/s02.jpg" },
+  ];
 
-  // =========================
-  // STATE
-  // =========================
+  // ===== STATE =====
   const state = {
     filter: "all",
     q: "",
@@ -286,22 +53,82 @@
       return {};
     }
   }
-
   function saveCart() {
     localStorage.setItem("lyshop_cart", JSON.stringify(state.cart));
   }
-
   function cartCount() {
     return Object.values(state.cart).reduce((sum, it) => sum + it.qty, 0);
   }
-
   function cartSubtotal() {
     return Object.values(state.cart).reduce((sum, it) => sum + it.qty * it.price, 0);
   }
+  function escapeHtml(str) {
+    return String(str)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
-  // =========================
-  // RENDER
-  // =========================
+  function buildZaloMessage(items) {
+    const lines = [
+      "Ly ơi chốt đơn giúp em nhé ❤️",
+      "",
+      ...items.map((it, i) => `${i + 1}) ${it.code} - ${it.name} | Màu: ${it.color} | Size: ${it.size} | SL: ${it.qty}`),
+      "",
+      "Địa chỉ nhận hàng: ...",
+      "SĐT người nhận: ...",
+    ];
+    return lines.join("\n");
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Đã copy ✅");
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+      toast("Đã copy ✅");
+    }
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    let el = $("#toast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "toast";
+      Object.assign(el.style, {
+        position: "fixed",
+        left: "50%",
+        bottom: "18px",
+        transform: "translateX(-50%)",
+        zIndex: "9999",
+        padding: "12px 14px",
+        borderRadius: "999px",
+        background: "rgba(0,0,0,.55)",
+        border: "1px solid rgba(255,255,255,.18)",
+        backdropFilter: "blur(8px)",
+        color: "white",
+        fontWeight: "900",
+        maxWidth: "92vw",
+        textAlign: "center",
+      });
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.opacity = "1";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (el.style.opacity = "0"), 2200);
+  }
+
+  // ===== PRODUCTS RENDER =====
   function renderProducts() {
     const grid = $("#productGrid");
     if (!grid) return;
@@ -321,19 +148,18 @@
       });
 
     grid.innerHTML = list.map(p => `
-      <article class="card glass">
+      <article class="card">
         <div class="card__img">
-          <img src="${p.image}" alt="${escapeXml(p.name)}" loading="lazy">
+          <img src="${p.image}" alt="${escapeHtml(p.name)}" loading="lazy"
+               onerror="this.onerror=null;this.src='./images/placeholder.jpg';">
         </div>
 
         <div class="card__row">
           <div>
-            <div class="card__title">${escapeXml(p.name)}</div>
+            <div class="card__title">${escapeHtml(p.name)}</div>
             <div class="card__meta">
-              <span class="kicker">Mã: <b>${escapeXml(p.code)}</b></span>
-              <div style="margin-top:8px;">
-                Màu: <b>${escapeXml(p.color)}</b> • Size: <b>${escapeXml(p.size)}</b>
-              </div>
+              <span class="kicker">Mã: <b>${escapeHtml(p.code)}</b></span>
+              <div style="margin-top:8px;">Màu: <b>${escapeHtml(p.color)}</b> • Size: <b>${escapeHtml(p.size)}</b></div>
             </div>
           </div>
           <div class="price">${fmtVND(p.price)}</div>
@@ -346,36 +172,30 @@
       </article>
     `).join("");
 
-    // bind buttons
-    $$("[data-add]", grid).forEach(btn => {
-      btn.addEventListener("click", () => addToCart(btn.dataset.add));
-    });
-    $$("[data-buy]", grid).forEach(btn => {
-      btn.addEventListener("click", () => quickBuy(btn.dataset.buy));
-    });
+    $$("[data-add]", grid).forEach(btn => btn.addEventListener("click", () => addToCart(btn.dataset.add)));
+    $$("[data-buy]", grid).forEach(btn => btn.addEventListener("click", () => quickBuy(btn.dataset.buy)));
   }
 
+  // ===== CART =====
   function renderCartUI() {
-    $("#cartCount").textContent = String(cartCount());
-    $("#cartCountMobile").textContent = String(cartCount());
-    $("#cartSubtotal").textContent = fmtVND(cartSubtotal());
-
+    const sub = $("#cartSubtotal"); if (sub) sub.textContent = fmtVND(cartSubtotal());
     const wrap = $("#cartItems");
     if (!wrap) return;
 
     const items = Object.values(state.cart);
     if (items.length === 0) {
       wrap.innerHTML = `<div class="muted" style="padding:10px 0; font-weight:900;">Chưa có sản phẩm nào trong giỏ.</div>`;
-      $("#zaloCheckout").href = ZALO_CHAT_URL;
+      const checkout = $("#zaloCheckout");
+      if (checkout) { checkout.href = ZALO_CHAT_URL; checkout.onclick = null; }
       return;
     }
 
     wrap.innerHTML = items.map(it => `
       <div class="cartitem">
         <div>
-          <div class="cartitem__name">${escapeXml(it.name)} <span class="muted">(${escapeXml(it.code)})</span></div>
+          <div class="cartitem__name">${escapeHtml(it.name)} <span class="muted">(${escapeHtml(it.code)})</span></div>
           <div class="cartitem__meta">
-            Màu: <b>${escapeXml(it.color)}</b> • Size: <b>${escapeXml(it.size)}</b><br/>
+            Màu: <b>${escapeHtml(it.color)}</b> • Size: <b>${escapeHtml(it.size)}</b><br/>
             Giá: <b>${fmtVND(it.price)}</b>
           </div>
         </div>
@@ -390,21 +210,20 @@
     $$("[data-inc]", wrap).forEach(b => b.addEventListener("click", () => inc(b.dataset.inc)));
     $$("[data-dec]", wrap).forEach(b => b.addEventListener("click", () => dec(b.dataset.dec)));
 
-    // update checkout click: copy message then open zalo chat
     const text = buildZaloMessage(items.map(it => ({
       code: it.code, name: it.name, color: it.color, size: it.size, qty: it.qty
     })));
 
     const checkout = $("#zaloCheckout");
-    checkout.onclick = (e) => {
-      e.preventDefault();
-      openZaloWithText(text);
-    };
+    if (checkout) {
+      checkout.onclick = (e) => {
+        e.preventDefault();
+        copyText(text);
+        window.open(ZALO_CHAT_URL, "_blank", "noopener");
+      };
+    }
   }
 
-  // =========================
-  // CART ACTIONS
-  // =========================
   function addToCart(productId) {
     const p = products.find(x => x.id === productId);
     if (!p) return;
@@ -417,6 +236,7 @@
     saveCart();
     renderCartUI();
     toast(`Đã thêm: ${p.code} ✅`);
+    openDrawer();
   }
 
   function quickBuy(productId) {
@@ -424,7 +244,8 @@
     if (!p) return;
 
     const msg = buildZaloMessage([{ code: p.code, name: p.name, color: p.color, size: p.size, qty: 1 }]);
-    openZaloWithText(msg);
+    copyText(msg);
+    window.open(ZALO_CHAT_URL, "_blank", "noopener");
   }
 
   function inc(id) {
@@ -449,20 +270,154 @@
     toast("Đã xóa giỏ ✅");
   }
 
-  // =========================
-  // UI: drawer / menu / filters
-  // =========================
   function openDrawer() {
     const d = $("#cartDrawer");
+    if (!d) return;
     d.classList.add("is-open");
     d.setAttribute("aria-hidden", "false");
   }
   function closeDrawer() {
     const d = $("#cartDrawer");
+    if (!d) return;
     d.classList.remove("is-open");
     d.setAttribute("aria-hidden", "true");
   }
 
+  // ===== NEW DROP ROTATE =====
+  function setupNewDropRotator() {
+    const slots = [$("#nd1"), $("#nd2"), $("#nd3")].filter(Boolean);
+    if (slots.length !== 3) return;
+
+    const pool = [
+      "./images/nd1.jpg",
+      "./images/nd2.jpg",
+      "./images/nd3.jpg",
+      "./images/nd4.jpg",
+      "./images/nd5.jpg",
+      "./images/nd6.jpg",
+    ];
+
+    const intervalMs = 10000; // đổi 5000 nếu muốn 5 giây
+
+    const safeSetSrc = (img, src) => new Promise((resolve) => {
+      img.onload = () => resolve(true);
+      img.onerror = () => resolve(false);
+      img.src = src;
+    });
+
+    function pickNext(exclude) {
+      const cand = pool.filter(p => !exclude.includes(p));
+      const list = cand.length ? cand : pool;
+      return list[Math.floor(Math.random() * list.length)];
+    }
+
+    slots.forEach(img => img.classList.add("is-show", "kenburns"));
+
+    let idx = 0;
+    setInterval(() => {
+      const img = slots[idx % 3];
+      idx++;
+
+      const current = slots.map(x => x.getAttribute("src"));
+      const nextSrc = pickNext(current);
+
+      img.classList.add("is-fading");
+
+      setTimeout(async () => {
+        await safeSetSrc(img, nextSrc);
+        img.classList.remove("is-fading");
+        img.classList.add("is-show");
+      }, 450);
+    }, intervalMs);
+  }
+
+  // ===== LIVE COUNTDOWN + NOTIFY =====
+  function nextLiveDate(now = new Date()) {
+    const candidates = LIVE_SCHEDULE.map(s => {
+      const d = new Date(now);
+      d.setHours(s.hour, s.minute, 0, 0);
+      if (d <= now) d.setDate(d.getDate() + 1);
+      return d;
+    });
+    candidates.sort((a,b)=>a-b);
+    return candidates[0];
+  }
+
+  function fmtTime(d) {
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    return `${hh}:${mm}`;
+  }
+
+  function tickLive() {
+    const now = new Date();
+    const next = nextLiveDate(now);
+    const diff = next - now;
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    const cd = `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+    const cdEl = $("#liveCountdown"); if (cdEl) cdEl.textContent = cd;
+
+    const tEl = $("#liveTimeText");
+    if (tEl) tEl.textContent = LIVE_SCHEDULE.map(x => `${String(x.hour).padStart(2,"0")}:${String(x.minute).padStart(2,"0")}`).join(" / ");
+  }
+
+  function scheduleReminder() {
+    // lưu trạng thái nhắc vào localStorage
+    localStorage.setItem("lyshop_live_remind", "1");
+    toast(`Đã bật nhắc live trước ${REMIND_BEFORE_MINUTES} phút ✅`);
+  }
+
+  function cancelReminder() {
+    localStorage.removeItem("lyshop_live_remind");
+    toast("Đã tắt nhắc live ✅");
+  }
+
+  function maybeNotify() {
+    const enabled = localStorage.getItem("lyshop_live_remind") === "1";
+    if (!enabled) return;
+
+    const now = new Date();
+    const next = nextLiveDate(now);
+    const diffMin = Math.floor((next - now) / 60000);
+
+    // Chỉ notify 1 lần cho mỗi buổi live
+    const key = "lyshop_live_notified_at";
+    const last = localStorage.getItem(key);
+
+    const should = diffMin === REMIND_BEFORE_MINUTES;
+    const stamp = next.toISOString().slice(0,16); // unique for session
+
+    if (should && last !== stamp) {
+      localStorage.setItem(key, stamp);
+      showNotification(`Sắp live rồi!`, `Còn ${REMIND_BEFORE_MINUTES} phút nữa shop lên live (${fmtTime(next)}).`);
+    }
+  }
+
+  async function showNotification(title, body) {
+    if (!("Notification" in window)) {
+      toast("Máy bạn không hỗ trợ thông báo.");
+      return;
+    }
+
+    if (Notification.permission === "default") {
+      const p = await Notification.requestPermission();
+      if (p !== "granted") {
+        toast("Bạn chưa cho phép thông báo.");
+        return;
+      }
+    }
+    if (Notification.permission !== "granted") {
+      toast("Bạn chưa cho phép thông báo.");
+      return;
+    }
+
+    const n = new Notification(title, { body });
+    n.onclick = () => window.open("https://www.tiktok.com/@tho.ly.nguyn32", "_blank", "noopener");
+  }
+
+  // ===== Bind UI =====
   function setupFilters() {
     const chips = $$(".filters .chipbtn");
     chips.forEach(btn => {
@@ -476,246 +431,87 @@
   }
 
   function setupSearchSort() {
-    $("#searchInput").addEventListener("input", (e) => {
-      state.q = e.target.value || "";
-      renderProducts();
-    });
-    $("#sortSelect").addEventListener("change", (e) => {
-      state.sort = e.target.value || "hot";
-      renderProducts();
-    });
+    const si = $("#searchInput");
+    if (si) si.addEventListener("input", (e) => { state.q = e.target.value || ""; renderProducts(); });
+
+    const ss = $("#sortSelect");
+    if (ss) ss.addEventListener("change", (e) => { state.sort = e.target.value || "hot"; renderProducts(); });
   }
 
-  function setupMobileMenu() {
-    const ham = $("#hamburger");
-    const menu = $("#mobileMenu");
-    ham.addEventListener("click", () => {
-      const open = menu.hasAttribute("hidden") === false;
-      if (open) {
-        menu.hidden = true;
-        ham.setAttribute("aria-expanded", "false");
-      } else {
-        menu.hidden = false;
-        ham.setAttribute("aria-expanded", "true");
-      }
-    });
-
-    // close on click
-    $$("a", menu).forEach(a => a.addEventListener("click", () => {
-      menu.hidden = true;
-      ham.setAttribute("aria-expanded", "false");
-    }));
-  }
-
-  // Theme (auto/light/dark)
-  function applyTheme(mode) {
-    const html = document.documentElement;
-    let theme = mode;
-
-    if (mode === "auto") {
-      theme = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-    }
-
-    html.classList.add("theme-anim");
-    html.setAttribute("data-theme", theme);
-
-    const icon = theme === "light" ? "☀️" : "🌙";
-    const text = theme === "light" ? "Sáng" : "Tối";
-    $("#themeIcon").textContent = icon;
-    $("#themeText").textContent = text;
-    $("#themeTextMobile").textContent = text;
-
-    localStorage.setItem("lyshop_theme_mode", mode);
-    setTimeout(() => html.classList.remove("theme-anim"), 260);
-  }
-
-  function setupTheme() {
-    const btn = $("#themeBtn");
-    const menu = $("#themeMenu");
-
-    const saved = localStorage.getItem("lyshop_theme_mode") || "dark";
-    applyTheme(saved);
-
-    btn.addEventListener("click", () => {
-      const isOpen = !menu.hidden;
-      menu.hidden = isOpen;
-      btn.setAttribute("aria-expanded", String(!isOpen));
-    });
-
-    // click outside
-    document.addEventListener("click", (e) => {
-      if (!menu) return;
-      if (menu.hidden) return;
-      if (menu.contains(e.target) || btn.contains(e.target)) return;
-      menu.hidden = true;
-      btn.setAttribute("aria-expanded", "false");
-    });
-
-    $$("[data-theme-mode]").forEach(opt => {
-      opt.addEventListener("click", () => {
-        const mode = opt.dataset.themeMode;
-        applyTheme(mode);
-        if (!menu.hidden) {
-          menu.hidden = true;
-          btn.setAttribute("aria-expanded", "false");
-        }
-      });
-    });
-
-    // auto mode react to system changes
-    window.matchMedia?.("(prefers-color-scheme: light)")?.addEventListener?.("change", () => {
-      const mode = localStorage.getItem("lyshop_theme_mode") || "dark";
-      if (mode === "auto") applyTheme("auto");
-    });
-  }
-
-  // reveal
-  function setupReveal() {
-    const els = $$(".reveal");
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(en => {
-        if (en.isIntersecting) en.target.classList.add("in");
-      });
-    }, { threshold: 0.12 });
-
-    els.forEach(el => {
-      const d = el.getAttribute("data-delay") || "0";
-      el.style.setProperty("--d", `${d}ms`);
-      io.observe(el);
-    });
-  }
-
-  // tilt card
-  function setupTilt() {
-    const card = $("#tiltCard");
-    if (!card) return;
-    card.addEventListener("mousemove", (e) => {
-      const r = card.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width;
-      const y = (e.clientY - r.top) / r.height;
-      const rotY = (x - 0.5) * 10;
-      const rotX = -(y - 0.5) * 10;
-      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-    });
-    card.addEventListener("mouseleave", () => {
-      card.style.transform = `rotateX(0deg) rotateY(0deg)`;
-    });
-  }
-
-  // particles (nhẹ)
-  function setupParticles() {
-    const c = $("#particles");
-    if (!c) return;
-    const ctx = c.getContext("2d");
-    let w = 0, h = 0;
-    const dots = Array.from({ length: 70 }, () => ({
-      x: Math.random(), y: Math.random(),
-      vx: (Math.random() - 0.5) * 0.0006,
-      vy: (Math.random() - 0.5) * 0.0006,
-      r: 1.2 + Math.random() * 1.8
-    }));
-
-    const resize = () => {
-      w = c.width = window.innerWidth;
-      h = c.height = window.innerHeight;
-    };
-    window.addEventListener("resize", resize);
-    resize();
-
-    function draw() {
-      ctx.clearRect(0, 0, w, h);
-      ctx.globalAlpha = 0.9;
-      ctx.fillStyle = "rgba(255,255,255,.65)";
-
-      for (const d of dots) {
-        d.x += d.vx;
-        d.y += d.vy;
-        if (d.x < 0) d.x = 1;
-        if (d.x > 1) d.x = 0;
-        if (d.y < 0) d.y = 1;
-        if (d.y > 1) d.y = 0;
-
-        const px = d.x * w, py = d.y * h;
-        ctx.beginPath();
-        ctx.arc(px, py, d.r, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      requestAnimationFrame(draw);
-    }
-    draw();
-  }
-
-  // hero button: copy phone
-  function setupCopyButtons() {
-    const bind = (id) => {
-      const b = $(id);
-      if (!b) return;
-      b.addEventListener("click", () => {
-        const phone = b.dataset.phone || ZALO_PHONE;
-        copyText(phone);
-        toast("Đã copy SĐT/Zalo ✅");
-      });
-    };
-    bind("#copyPhone");
-    bind("#copyPhone2");
-  }
-
-  // cart buttons
   function setupCartButtons() {
-    $("#openCart").addEventListener("click", openDrawer);
-    $("#openCartMobile").addEventListener("click", openDrawer);
-    $("#closeCart").addEventListener("click", closeDrawer);
-    $("#drawerBackdrop").addEventListener("click", closeDrawer);
-    $("#clearCart").addEventListener("click", clearCart);
-
-    // ESC close
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeDrawer();
-    });
+    const bd = $("#drawerBackdrop"); if (bd) bd.addEventListener("click", closeDrawer);
+    const cc = $("#closeCart"); if (cc) cc.addEventListener("click", closeDrawer);
+    const cl = $("#clearCart"); if (cl) cl.addEventListener("click", clearCart);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
   }
 
-  // quick add: add hottest
   function setupQuickAdd() {
-    $("#quickAdd").addEventListener("click", () => {
+    const qa = $("#quickAdd");
+    if (!qa) return;
+    qa.addEventListener("click", () => {
       const hot = [...products].sort((a,b)=> (b.hot??0)-(a.hot??0))[0];
       addToCart(hot.id);
-      openDrawer();
     });
   }
 
-  // mouse highlight for primary button
-  function setupBtnGlow() {
-    $$(".btn--primary").forEach(btn => {
-      btn.addEventListener("mousemove", (e) => {
-        const r = btn.getBoundingClientRect();
-        const mx = ((e.clientX - r.left) / r.width) * 100;
-        const my = ((e.clientY - r.top) / r.height) * 100;
-        btn.style.setProperty("--mx", `${mx}%`);
-        btn.style.setProperty("--my", `${my}%`);
-      });
+  function setupLiveUI() {
+    const btn = $("#notifyBtn");
+    if (!btn) return;
+
+    const refreshBtnText = () => {
+      const on = localStorage.getItem("lyshop_live_remind") === "1";
+      btn.textContent = on ? "🔕 Tắt nhắc" : "⏰ Nhắc tôi";
+      btn.classList.toggle("btn--soft", on);
+      btn.classList.toggle("btn--primary", !on);
+    };
+
+    refreshBtnText();
+
+    btn.addEventListener("click", async () => {
+      const on = localStorage.getItem("lyshop_live_remind") === "1";
+      if (on) {
+        cancelReminder();
+        refreshBtnText();
+        return;
+      }
+
+      // xin quyền notification
+      if ("Notification" in window && Notification.permission === "default") {
+        const p = await Notification.requestPermission();
+        if (p !== "granted") {
+          toast("Bạn chưa cho phép thông báo.");
+          return;
+        }
+      }
+      scheduleReminder();
+      refreshBtnText();
     });
+
+    // copy zalo
+    const cz = $("#copyZalo");
+    if (cz) cz.addEventListener("click", () => copyText(cz.dataset.phone || ZALO_PHONE));
   }
 
-  // =========================
-  // INIT
-  // =========================
   function init() {
-    $("#year").textContent = String(new Date().getFullYear());
+    const year = $("#year"); if (year) year.textContent = String(new Date().getFullYear());
 
-    setupTheme();
-    setupMobileMenu();
-    setupReveal();
-    setupTilt();
-    setupParticles();
-    setupCopyButtons();
-    setupCartButtons();
     setupFilters();
     setupSearchSort();
+    setupCartButtons();
     setupQuickAdd();
-    setupBtnGlow();
+    setupNewDropRotator();
 
     renderProducts();
     renderCartUI();
+
+    // live countdown
+    tickLive();
+    setInterval(() => {
+      tickLive();
+      maybeNotify();
+    }, 1000);
+
+    setupLiveUI();
   }
 
   document.addEventListener("DOMContentLoaded", init);
