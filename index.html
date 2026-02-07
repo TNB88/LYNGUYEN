@@ -1,267 +1,387 @@
 <!doctype html>
 <html lang="vi" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Ly Shop • Thời trang nữ</title>
-
+  <title>Ly Shop — Thời trang nữ</title>
+  <meta name="description" content="Ly Shop — Thời trang nữ xịn, hiện đại. Mua nhanh qua Zalo." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css" />
 </head>
+
 <body>
   <canvas id="particles" aria-hidden="true"></canvas>
   <div class="bg-blobs" aria-hidden="true">
-    <span class="blob b1"></span>
-    <span class="blob b2"></span>
-    <span class="blob b3"></span>
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
   </div>
   <div class="noise" aria-hidden="true"></div>
 
+  <!-- TOPBAR -->
   <header class="topbar">
     <div class="container topbar__inner">
       <a class="brand" href="#home">
-        <span class="brand__logo">LY</span>
-        <span class="brand__text">
-          <span class="brand__name">Ly Shop</span>
-          <span class="brand__tag">Thời trang nữ • Modern</span>
-        </span>
+        <div class="brand__logo">LY</div>
+        <div class="brand__text">
+          <div class="brand__name">Ly Shop</div>
+          <div class="brand__tag">Thời trang nữ • Xịn • Hiện đại</div>
+        </div>
       </a>
 
-      <nav class="nav">
-        <a href="#san-pham">Sản phẩm</a>
-        <a href="#sizechart">Size chart</a>
-        <a href="#doitra">Đổi trả</a>
+      <nav class="nav" aria-label="Điều hướng">
+        <a href="#products">Sản phẩm</a>
+        <a href="#size">Size chart</a>
+        <a href="#policy">Đổi trả</a>
+        <a href="#live">Livestream</a>
 
         <div class="theme">
-          <button class="theme__btn" id="themeBtn" type="button">
+          <button id="themeBtn" class="theme__btn" type="button" aria-haspopup="menu" aria-expanded="false">
             <span id="themeIcon">🌙</span>
             <span id="themeText">Tối</span>
           </button>
-          <div class="theme__menu glass" id="themeMenu" hidden>
-            <button class="theme__opt" data-theme-mode="auto" type="button"><span>Auto</span><span class="muted">Theo hệ thống</span></button>
-            <button class="theme__opt" data-theme-mode="light" type="button"><span>Sáng</span><span class="muted">Light</span></button>
-            <button class="theme__opt" data-theme-mode="dark" type="button"><span>Tối</span><span class="muted">Dark</span></button>
+          <div id="themeMenu" class="theme__menu glass" hidden role="menu" aria-label="Chọn giao diện">
+            <button class="theme__opt" type="button" data-theme-mode="auto" role="menuitem">
+              <span>Auto</span><span class="muted">🪄</span>
+            </button>
+            <button class="theme__opt" type="button" data-theme-mode="light" role="menuitem">
+              <span>Sáng</span><span class="muted">☀️</span>
+            </button>
+            <button class="theme__opt" type="button" data-theme-mode="dark" role="menuitem">
+              <span>Tối</span><span class="muted">🌙</span>
+            </button>
           </div>
         </div>
 
-        <button class="nav__cart" id="openCart" type="button">
-          <span>Giỏ hàng</span>
-          <span class="badge" id="cartCount">0</span>
+        <button id="openCart" class="nav__cart" type="button" aria-label="Mở giỏ hàng">
+          🛒 Giỏ <span id="cartCount" class="badge">0</span>
         </button>
 
-        <a class="nav__cta" href="#lien-he">Đặt hàng</a>
+        <a class="nav__cta" href="#products">Mua ngay</a>
       </nav>
 
-      <button class="hamburger" id="hamburger" aria-label="Mở menu" aria-expanded="false">
+      <button id="hamburger" class="hamburger" type="button" aria-label="Mở menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
     </div>
 
-    <div class="mobile-menu" id="mobileMenu" hidden>
-      <a href="#san-pham">Sản phẩm</a>
-      <a href="#sizechart">Size chart</a>
-      <a href="#doitra">Đổi trả</a>
+    <!-- Mobile menu -->
+    <div id="mobileMenu" class="mobile-menu container" hidden>
+      <a href="#products">Sản phẩm</a>
+      <a href="#size">Size chart</a>
+      <a href="#policy">Đổi trả</a>
+      <a href="#live">Livestream</a>
 
       <div class="mobile-theme glass">
         <div class="mobile-theme__row">
-          <b>Giao diện</b>
-          <span class="muted" id="themeTextMobile">Tối</span>
+          <div><b>Giao diện:</b> <span id="themeTextMobile" class="muted">Tối</span></div>
+          <button id="openCartMobile" class="nav__cart" type="button" aria-label="Mở giỏ hàng">
+            🛒 Giỏ <span id="cartCountMobile" class="badge">0</span>
+          </button>
         </div>
         <div class="mobile-theme__actions">
-          <button class="chipbtn" data-theme-mode="auto" type="button">Auto</button>
-          <button class="chipbtn" data-theme-mode="light" type="button">Sáng</button>
-          <button class="chipbtn" data-theme-mode="dark" type="button">Tối</button>
+          <button class="chipbtn" type="button" data-theme-mode="auto">Auto</button>
+          <button class="chipbtn" type="button" data-theme-mode="light">Sáng</button>
+          <button class="chipbtn" type="button" data-theme-mode="dark">Tối</button>
         </div>
       </div>
-
-      <button class="btn btn--soft btn--full" id="openCartMobile" type="button">
-        Mở giỏ hàng <span class="pillcount" id="cartCountMobile">0</span>
-      </button>
-      <a href="#lien-he" class="btn btn--primary btn--full">Đặt hàng</a>
     </div>
   </header>
 
-  <!-- Drawer -->
-  <aside class="drawer" id="cartDrawer" aria-hidden="true">
-    <div class="drawer__panel glass">
-      <div class="drawer__head">
-        <div>
-          <div class="drawer__title">Giỏ hàng</div>
-          <div class="drawer__sub">Thêm món → bấm “Đặt qua Zalo”</div>
+  <!-- HERO -->
+  <main id="home" class="hero">
+    <div class="container hero__grid">
+      <div>
+        <div class="pill reveal" data-delay="50">
+          <span class="dot"></span>
+          Hàng đẹp — Giá dễ thương — Chốt đơn nhanh qua Zalo
         </div>
-        <button class="iconbtn" id="closeCart" type="button">✕</button>
+
+        <h1 class="hero__title reveal" data-delay="120">
+          Ly Shop — <span class="grad">đẹp xịn hiện đại</span><br/>
+          <span class="hero__em">mặc lên là “wow” ✨</span>
+        </h1>
+
+        <p class="hero__desc reveal" data-delay="180">
+          Chọn mẫu bạn thích → bấm <b>Thêm giỏ</b> / <b>Mua nhanh</b> → hệ thống tự soạn tin nhắn đặt hàng qua Zalo.
+        </p>
+
+        <div class="hero__actions reveal" data-delay="240">
+          <a class="btn btn--primary" href="#products">
+            <span class="btn__icon">🛍️</span> Xem sản phẩm
+          </a>
+          <a class="btn btn--soft" href="https://zalo.me/g/bugggx505" target="_blank" rel="noopener">
+            👥 Vào nhóm Zalo nhận mã giảm
+          </a>
+          <button id="copyPhone" class="btn btn--ghost" type="button" data-phone="0939617080">
+            📋 Copy SĐT/Zalo
+          </button>
+        </div>
+
+        <div class="hero__links reveal" data-delay="280">
+          <a class="linkchip" href="https://www.tiktok.com/@tho.ly.nguyn32" target="_blank" rel="noopener">🎥 TikTok: @tho.ly.nguyn32</a>
+          <a class="linkchip" href="https://zalo.me/0939617080" target="_blank" rel="noopener">💬 Chat Zalo</a>
+          <a class="linkchip" href="https://zalo.me/g/bugggx505" target="_blank" rel="noopener">🎁 Nhóm Zalo (mã giảm)</a>
+        </div>
       </div>
 
-      <div class="drawer__body" id="cartItems"></div>
-
-      <div class="drawer__foot">
-        <div class="totals">
-          <div class="totals__row"><span>Tạm tính</span><b id="cartSubtotal">0đ</b></div>
-          <div class="totals__row totals__muted"><span>Phí ship</span><span>Tùy khu vực</span></div>
+      <div id="tiltCard" class="showcase glass reveal" data-delay="160">
+        <div class="card__shine"></div>
+        <div class="showcase__top">
+          <div class="showcase__badge">NEW DROP</div>
+          <div class="showcase__chip">Ảnh chuẩn 1706×2560</div>
         </div>
-
-        <div class="drawer__actions">
-          <button class="btn btn--ghost btn--full" id="clearCart" type="button">Xóa giỏ</button>
-          <a class="btn btn--primary btn--full" id="zaloCheckout" href="#" target="_blank" rel="noopener">
-            Đặt qua Zalo <span class="btn__icon">→</span>
-          </a>
-          <a class="btn btn--soft btn--full" href="https://zalo.me/g/bugggx505" target="_blank" rel="noopener">
-            Vào nhóm Zalo nhận mã giảm
-          </a>
+        <div class="showcase__art">
+          <div class="art art1"></div>
+          <div class="art art2"></div>
+          <div class="art art3"></div>
         </div>
-
-        <div class="drawer__note">* Nhắn shop: <b>mã sản phẩm + màu + size + địa chỉ</b></div>
+        <div class="showcase__bottom">
+          <div>
+            <div class="showcase__title">Đặt nhanh trong 10 giây</div>
+            <div class="showcase__sub">Chọn mẫu → thêm giỏ → gửi Zalo</div>
+          </div>
+          <button id="quickAdd" class="iconbtn iconbtn--glow" type="button" title="Thêm mẫu hot">
+            +
+          </button>
+        </div>
       </div>
     </div>
-
-    <div class="drawer__backdrop" id="drawerBackdrop" aria-hidden="true"></div>
-  </aside>
-
-  <main id="home">
-    <section class="hero">
-      <div class="container hero__grid">
-        <div class="hero__content">
-          <div class="pill"><span class="dot"></span><span>Hàng mới • Form đẹp • Chốt nhanh</span></div>
-          <h1 class="hero__title"><span class="grad">Ly Shop</span> — thời trang nữ<br><span class="hero__em">cực xịn • hiện đại</span></h1>
-          <p class="hero__desc">Chọn mẫu → thêm giỏ → bấm “Đặt qua Zalo”. Vào nhóm Zalo nhận mã giảm.</p>
-
-          <div class="hero__actions">
-            <a class="btn btn--primary" href="#san-pham">Xem sản phẩm <span class="btn__icon">→</span></a>
-            <a class="btn btn--soft" href="https://zalo.me/g/bugggx505" target="_blank" rel="noopener">Vào nhóm Zalo</a>
-            <button class="btn btn--ghost" id="copyPhone" type="button" data-phone="0939617080">Copy Zalo: 0939617080</button>
-          </div>
-
-          <div class="hero__links">
-            <a class="linkchip" href="https://zalo.me/0939617080" target="_blank" rel="noopener">Zalo: 0939617080</a>
-            <a class="linkchip" href="https://www.tiktok.com/@tho.ly.nguyn32" target="_blank" rel="noopener">TikTok: Ly Hệ rú Bỳ🌸</a>
-          </div>
-        </div>
-
-        <div class="hero__card">
-          <div class="showcase glass">
-            <div class="showcase__top">
-              <div class="showcase__badge">TRENDING</div>
-              <div class="showcase__chip">Ly Shop</div>
-            </div>
-            <div class="showcase__art" aria-hidden="true">
-              <div class="art art1"></div>
-              <div class="art art2"></div>
-              <div class="art art3"></div>
-            </div>
-            <div class="showcase__bottom">
-              <div>
-                <div class="showcase__title">Outfit of the day</div>
-                <div class="showcase__sub">Chốt đơn nhanh qua Zalo</div>
-              </div>
-              <button class="iconbtn iconbtn--glow" id="quickAdd" type="button" title="Thêm set hot">＋</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="san-pham">
-      <div class="container">
-        <div class="section__head">
-          <h2>Sản phẩm</h2>
-          <p>Ảnh 1706×2560 tự crop đẹp theo khung <b>4:5</b>.</p>
-        </div>
-
-        <div class="grid" id="productGrid"></div>
-      </div>
-    </section>
-
-    <section class="section" id="sizechart">
-      <div class="container">
-        <div class="section__head">
-          <h2>Size chart</h2>
-          <p>Nhắn Zalo để shop tư vấn size chuẩn dáng.</p>
-        </div>
-
-        <div class="sizewrap glass">
-          <div class="sizecols">
-            <div class="sizecard">
-              <h3>Áo / Váy</h3>
-              <div class="tablewrap">
-                <table>
-                  <thead><tr><th>Size</th><th>Ngực</th><th>Eo</th><th>Mông</th></tr></thead>
-                  <tbody>
-                    <tr><td>S</td><td>80–86</td><td>62–68</td><td>84–90</td></tr>
-                    <tr><td>M</td><td>86–92</td><td>68–74</td><td>90–96</td></tr>
-                    <tr><td>L</td><td>92–98</td><td>74–80</td><td>96–102</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="muted">* số đo cm</div>
-            </div>
-
-            <div class="sizecard">
-              <h3>Quần</h3>
-              <div class="tablewrap">
-                <table>
-                  <thead><tr><th>Size</th><th>Eo</th><th>Mông</th><th>Gợi ý</th></tr></thead>
-                  <tbody>
-                    <tr><td>S</td><td>62–68</td><td>84–90</td><td>40–48kg</td></tr>
-                    <tr><td>M</td><td>68–74</td><td>90–96</td><td>48–55kg</td></tr>
-                    <tr><td>L</td><td>74–80</td><td>96–102</td><td>55–62kg</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="muted">* tùy chất vải</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="doitra">
-      <div class="container">
-        <div class="section__head">
-          <h2>Chính sách đổi trả</h2>
-          <p>Đổi trong 3 ngày (chưa giặt, còn tem/tag).</p>
-        </div>
-
-        <div class="faq">
-          <details class="faq__item glass">
-            <summary>✅ Đổi size/màu trong bao lâu?</summary>
-            <div class="faq__content">Đổi trong <b>3 ngày</b> kể từ khi nhận hàng.</div>
-          </details>
-          <details class="faq__item glass">
-            <summary>📦 Trường hợp lỗi sản phẩm?</summary>
-            <div class="faq__content">Lỗi do shop: shop hỗ trợ đổi nhanh.</div>
-          </details>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section--cta" id="lien-he">
-      <div class="container cta glass">
-        <h2>Đặt hàng ngay — Ly Shop</h2>
-        <p>Zalo/SDT: <b>0939617080</b> • TikTok: <b>@tho.ly.nguyn32</b></p>
-        <div class="cta__actions">
-          <a class="btn btn--primary" href="https://zalo.me/0939617080" target="_blank" rel="noopener">Nhắn Zalo <span class="btn__icon">→</span></a>
-          <button class="btn btn--ghost" id="copyPhone2" type="button" data-phone="0939617080">Copy số</button>
-          <a class="btn btn--soft" href="https://zalo.me/g/bugggx505" target="_blank" rel="noopener">Vào nhóm Zalo nhận mã giảm</a>
-        </div>
-      </div>
-    </section>
   </main>
 
+  <!-- LIVE -->
+  <section id="live" class="section">
+    <div class="container">
+      <div class="section__head">
+        <h2 class="reveal" data-delay="60">Livestream TikTok</h2>
+        <p class="reveal" data-delay="120">Theo dõi livestream để săn deal và xem hàng thật.</p>
+      </div>
+
+      <div class="live glass reveal" data-delay="160">
+        <div>
+          <div class="live__badge">LIVE • TikTok</div>
+          <h3>Ly Hệ rú Bỳ🌸 — @tho.ly.nguyn32</h3>
+          <p>Ấn vào nút bên dưới để vào TikTok hoặc vào nhóm Zalo nhận mã giảm.</p>
+          <div class="live__actions">
+            <a class="btn btn--primary" href="https://www.tiktok.com/@tho.ly.nguyn32" target="_blank" rel="noopener">
+              🎥 Mở TikTok
+            </a>
+            <a class="btn btn--soft" href="https://zalo.me/g/bugggx505" target="_blank" rel="noopener">
+              🎁 Vào nhóm Zalo nhận mã giảm
+            </a>
+            <button id="copyPhone2" class="btn btn--ghost" type="button" data-phone="0939617080">
+              📋 Copy SĐT/Zalo
+            </button>
+          </div>
+        </div>
+
+        <div class="live__right">
+          <div class="live__card glass">
+            <div style="font-weight:1000;font-size:16px;">Tip chốt đơn</div>
+            <div class="muted" style="margin-top:8px;line-height:1.7;">
+              Ghi rõ <b>Mã</b> + <b>Màu</b> + <b>Size</b> + <b>Địa chỉ</b> để shop xử lý nhanh nhất.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section id="products" class="section">
+    <div class="container">
+      <div class="section__head">
+        <h2 class="reveal" data-delay="60">Sản phẩm nổi bật</h2>
+        <p class="reveal" data-delay="120">Bấm “Thêm giỏ” hoặc “Mua nhanh” để đặt qua Zalo.</p>
+      </div>
+
+      <div class="toolbar glass reveal" data-delay="160">
+        <div class="search">
+          <input id="searchInput" type="search" placeholder="Tìm sản phẩm (tên, mã, màu, size...)" autocomplete="off">
+          <div class="search__icon">⌕</div>
+        </div>
+
+        <div class="filters">
+          <button class="chipbtn is-active" type="button" data-filter="all">Tất cả</button>
+          <button class="chipbtn" type="button" data-filter="dress">Váy</button>
+          <button class="chipbtn" type="button" data-filter="top">Áo</button>
+          <button class="chipbtn" type="button" data-filter="pants">Quần</button>
+          <button class="chipbtn" type="button" data-filter="set">Set</button>
+        </div>
+
+        <div class="select">
+          <span>Sắp xếp</span>
+          <select id="sortSelect">
+            <option value="hot">Hot nhất</option>
+            <option value="priceAsc">Giá tăng</option>
+            <option value="priceDesc">Giá giảm</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="productGrid" class="grid"></div>
+    </div>
+  </section>
+
+  <!-- SIZE CHART -->
+  <section id="size" class="section">
+    <div class="container">
+      <div class="section__head">
+        <h2 class="reveal" data-delay="60">Size chart</h2>
+        <p class="reveal" data-delay="120">Bảng size tham khảo (shop sẽ tư vấn chuẩn theo số đo).</p>
+      </div>
+
+      <div class="sizewrap glass reveal" data-delay="160">
+        <div class="sizecols">
+          <div class="sizecard">
+            <h3>Áo / Váy (cm)</h3>
+            <div class="tablewrap">
+              <table>
+                <thead>
+                <tr><th>Size</th><th>Ngực</th><th>Eo</th><th>Dài</th></tr>
+                </thead>
+                <tbody>
+                <tr><td>S</td><td>82–86</td><td>64–68</td><td>78–82</td></tr>
+                <tr><td>M</td><td>86–90</td><td>68–72</td><td>82–86</td></tr>
+                <tr><td>L</td><td>90–94</td><td>72–76</td><td>86–90</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="sizecard">
+            <h3>Quần (cm)</h3>
+            <div class="tablewrap">
+              <table>
+                <thead>
+                <tr><th>Size</th><th>Eo</th><th>Mông</th><th>Dài</th></tr>
+                </thead>
+                <tbody>
+                <tr><td>S</td><td>62–66</td><td>86–90</td><td>98–102</td></tr>
+                <tr><td>M</td><td>66–70</td><td>90–94</td><td>100–104</td></tr>
+                <tr><td>L</td><td>70–74</td><td>94–98</td><td>102–106</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="sizecta">
+          <div>
+            <b>Không chắc size?</b>
+            <div class="muted" style="margin-top:6px;line-height:1.7;">
+              Nhắn số đo (ngực/eo/mông/cao/nặng) để Ly tư vấn.
+            </div>
+          </div>
+          <div class="sizecta__actions">
+            <a class="btn btn--primary" href="https://zalo.me/0939617080" target="_blank" rel="noopener">💬 Chat Zalo</a>
+            <a class="btn btn--soft" href="https://zalo.me/g/bugggx505" target="_blank" rel="noopener">🎁 Nhận mã giảm</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- POLICY -->
+  <section id="policy" class="section section--cta">
+    <div class="container">
+      <div class="section__head">
+        <h2 class="reveal" data-delay="60">Chính sách đổi trả</h2>
+        <p class="reveal" data-delay="120">Rõ ràng – dễ hiểu – hỗ trợ nhanh.</p>
+      </div>
+
+      <div class="faq">
+        <details class="faq__item glass reveal" data-delay="160">
+          <summary>Đổi size được không?</summary>
+          <div class="faq__content">
+            Được. Trong vòng <b>3 ngày</b> kể từ khi nhận hàng, sản phẩm còn tag, chưa giặt.
+          </div>
+        </details>
+
+        <details class="faq__item glass reveal" data-delay="220">
+          <summary>Đổi/trả do lỗi sản xuất?</summary>
+          <div class="faq__content">
+            Shop hỗ trợ đổi mới/hoàn tiền nếu lỗi do shop (rách, lỗi đường may...) — vui lòng quay video mở hàng.
+          </div>
+        </details>
+
+        <details class="faq__item glass reveal" data-delay="280">
+          <summary>Phí ship và thời gian giao?</summary>
+          <div class="faq__content">
+            Tùy khu vực. Thường 1–3 ngày nội thành, 2–5 ngày tỉnh. Nhắn Zalo để được báo chính xác.
+          </div>
+        </details>
+      </div>
+
+      <div class="cta glass reveal" data-delay="320">
+        <h2>Chốt đơn nhanh qua Zalo</h2>
+        <p>Nhấn nút — hệ thống tự soạn tin nhắn đơn hàng.</p>
+        <div class="cta__actions">
+          <a class="btn btn--primary" href="#products">🛍️ Mua ngay</a>
+          <a class="btn btn--soft" href="https://zalo.me/g/bugggx505" target="_blank" rel="noopener">🎁 Nhận mã giảm</a>
+          <a class="btn btn--ghost" href="https://zalo.me/0939617080" target="_blank" rel="noopener">💬 Chat Zalo</a>
+        </div>
+        <div class="cta__mini">
+          <span class="mini-pill">SĐT/Zalo: <b>0939 617 080</b></span>
+          <span class="mini-pill">TikTok: <b>@tho.ly.nguyn32</b></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
   <footer class="footer">
     <div class="container footer__inner">
-      <p class="footer__note">© <span id="year"></span> • Ly Shop</p>
+      <div>
+        <b>Ly Shop</b>
+        <p class="footer__note">© <span id="year"></span> Ly Shop • Thiết kế hiện đại • Mobile mượt</p>
+      </div>
       <div class="footer__links">
-        <a href="#san-pham">Sản phẩm</a>
-        <a href="#sizechart">Size</a>
-        <a href="#doitra">Đổi trả</a>
+        <a href="https://www.tiktok.com/@tho.ly.nguyn32" target="_blank" rel="noopener">TikTok</a>
+        <a href="https://zalo.me/0939617080" target="_blank" rel="noopener">Zalo</a>
+        <a href="https://zalo.me/g/bugggx505" target="_blank" rel="noopener">Nhóm Zalo</a>
       </div>
     </div>
   </footer>
 
-  <!-- ✅ DEFER để đảm bảo JS luôn chạy sau DOM -->
-  <script src="app.js" defer></script>
+  <!-- CART DRAWER -->
+  <aside id="cartDrawer" class="drawer" aria-hidden="true">
+    <div id="drawerBackdrop" class="drawer__backdrop" aria-hidden="true"></div>
+    <div class="drawer__panel glass" role="dialog" aria-label="Giỏ hàng">
+      <div class="drawer__head">
+        <div>
+          <div class="drawer__title">Giỏ hàng</div>
+          <div class="drawer__sub">Chốt đơn qua Zalo (tự soạn tin nhắn)</div>
+        </div>
+        <button id="closeCart" class="iconbtn" type="button" aria-label="Đóng">✕</button>
+      </div>
+
+      <div id="cartItems" class="drawer__body"></div>
+
+      <div class="drawer__foot">
+        <div class="totals">
+          <div class="totals__row">
+            <span class="totals__muted">Tạm tính</span>
+            <b id="cartSubtotal">0đ</b>
+          </div>
+        </div>
+
+        <div class="drawer__actions">
+          <a id="zaloCheckout" class="btn btn--primary btn--full" href="https://zalo.me/0939617080" target="_blank" rel="noopener">
+            💬 Gửi đơn qua Zalo
+          </a>
+          <button id="clearCart" class="btn btn--soft btn--full" type="button">🧹 Xóa giỏ</button>
+        </div>
+
+        <div class="drawer__note">
+          Tip: Nhớ ghi <b>màu</b>, <b>size</b>, <b>địa chỉ</b> trong tin nhắn để shop xử lý nhanh.
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <script src="./app.js"></script>
 </body>
 </html>
